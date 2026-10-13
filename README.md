@@ -38,6 +38,6 @@ En esta sección se van a identificar los roles principales del sistema:
 ### Impacto económico
 Para sostenerse, la plataforma contará con monetización mediante anuncios. Estos anuncios pueden ser publicados por los propios usuarios (para vender un patrón o materiales) o por empresas que quisieran publicitar en la plataforma. Con este dinero se costeará el servicio en cloud de almacenamiento y ejecución.
 ## Diagrama de Arquitectura
-TODO: Diagrama formal detallando componentes, protocolos de comunicación entre microservicios y almacenamiento.
+<img width="1138" height="779" alt="diagramaCC" src="https://github.com/user-attachments/assets/53bac855-c562-4eb0-a2d7-8743e4af7518" />
 ## Especificación de API REST
 TODO: Documentación sintética de los endpoints principales (rutas, verbos HTTP, payloads JSON).
