@@ -43,6 +43,7 @@ Para sostenerse, la plataforma contará con monetización mediante anuncios. Est
 ## Especificación de API REST
 Se usa DRF (Django rest framework) ya que la aplicación es nativamente django tanto en frontend como backend. Se usa la documentación de OpenAPI https://learn.openapis.org/specification/paths.
 | Verbo HTTP | Ruta | Propósito |
+| ------------- |:-------------:| -----:|
 | get | /{user} | Muestra el perfil del usuario|
 | get | /{user}/projects | Muestra los proyectos del usuario |
 | get | /{user}/materials | Muestra los materiales del usuario |
