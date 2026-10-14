@@ -41,4 +41,17 @@ Para sostenerse, la plataforma contará con monetización mediante anuncios. Est
 <img width="1138" height="779" alt="diagramaCC" src="https://github.com/user-attachments/assets/53bac855-c562-4eb0-a2d7-8743e4af7518" />
 
 ## Especificación de API REST
-TODO: Documentación sintética de los endpoints principales (rutas, verbos HTTP, payloads JSON).
+Se usa DRF (Django rest framework) ya que la aplicación es nativamente django tanto en frontend como backend. Se usa la documentación de OpenAPI https://learn.openapis.org/specification/paths.
+| Verbo HTTP | Ruta | Propósito |
+| get | /{user} | Muestra el perfil del usuario|
+| get | /{user}/projects | Muestra los proyectos del usuario |
+| get | /{user}/materials | Muestra los materiales del usuario |
+| get | /{user}/projects/add | Muestra un menú de añadir proyecto |
+| put | /{user}/projects/add | crea el proyecto con la información proporcionada y le asigna un id |
+| put | /{user}/projects/{id}/delete | borra el proyecto seleccionado |
+| get | /{user}/projects/{id} | muestra el proyecto de id {id} |
+| get | /{user}/projects/{id}/edit | muestra un formulario de edición del proyecto {id} |
+| put | /{user}/projects/{id}/edit | manda las ediciones del proyecto a la base de datos |
+| get | /search | búsqueda global de proyectos |
+| put | /search | muestra el resultado de la búsqueda |
+| get | /admin | panel de administracion autenticado de la aplicación |
