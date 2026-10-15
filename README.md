@@ -1,11 +1,22 @@
 # Retal
 Proyecto de desarrollo Cloud para la asignatura Cloud Computing de una aplicación de gestión personal de materiales y patrones para la realización de proyectos de arte textil.
 ## Herramientas utilizadas
-Python 
-Django
-Tailwind css
-git
-VScodium
+- `Python `
+- `Django`
+- `Tailwind css`
+- `Postgre SQL`
+- `git y Github`
+- `VScodium`
+## Estrategia de ramas
+- `main`: Rama protegida de cambios, solo se puede hacer pull request.
+- `{feature}`: Las ramas de funcionalidades tendrán lo que añaden en su título (Ej. login, gestionMateriales, etc.).
+### Commits semánticos
+| Tipo | significado |
+| -----|-------------|
+| feat | Agrega nuevas características (feat: autenticación) |
+| fix  | Corrección de errores (fix: corregido admin.py) |
+| docs | Agregar o cambiar documentación (docs: sección nueva en README.md) |
+| style | Correcciones menores de estilo o erratas (style: cambiada posición del botón de login) |
 ## Descripción del dominio
 Esta aplicación pretender ser un *hub* en la nube para proyectos de arte textil. La ventaja de desplegar la solución en la nube es la capacidad de extender o reducir el almacenamiento de los materiales y los proyectos a medida que se crean. Además, en estos contextos es usual que la demanda varíe según eventos periódicos, puesto que es más común tejer jerseys en invierno que en verano y existen KAL (Knit Along) que ocupan meses específicos donde más usuarios accederán a la plataforma y la utilizarán.
 ### Casos de uso principales
