@@ -17,7 +17,15 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 from django.views.generic import TemplateView
+from django.conf import settings
+from django.conf.urls import include
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path("",TemplateView.as_view(template_name="hello_world.html"),),
 ]
+if settings.DEBUG:
+    # Include django_browser_reload URLs only in DEBUG mode
+    urlpatterns += [
+        path("__reload__/", include("django_browser_reload.urls")),
+    ]
