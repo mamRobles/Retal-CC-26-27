@@ -37,8 +37,14 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'tailwind', #tailwind_css
+    'theme', #app de tailwindcss con las templates
 ]
+if DEBUG:
+    #solo en develop
+    INSTALLED_APPS +=['django_browser_reload'] # para refresh css automatico
 
+TAILWIND_APP_NAME = "theme"
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -54,7 +60,7 @@ ROOT_URLCONF = 'retales_proyecto.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR/"templates"],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -74,8 +80,12 @@ WSGI_APPLICATION = 'retales_proyecto.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+       'ENGINE': 'django.db.backends.postgresql',
+       'NAME': 'retales',
+       'USER': 'retales',
+       'PASSWORD': 'retales',
+       'HOST': 'localhost',
+       'PORT': '5432',
     }
 }
 
