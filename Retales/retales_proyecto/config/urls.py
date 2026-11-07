@@ -22,7 +22,8 @@ from django.conf.urls import include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("",TemplateView.as_view(template_name="hello_world.html"),),
+    path("accounts/", include("users.urls")),
+    path("", include("core.urls")),
 ]
 if settings.DEBUG:
     # Include django_browser_reload URLs only in DEBUG mode
