@@ -1,0 +1,20 @@
+#   docker compose up --build       desarrollo 
+#   docker compose -f compose.yaml up --build   produccion
+
+services:
+  retales:
+    build:
+      target: dev
+    command: ["python", "manage.py", "tailwind", "dev"]
+    environment:
+      DEBUG: "1"
+    volumes:
+      - ./Retales/retales_proyecto:/app
+    restart: "no"
+  materiales:
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    environment:
+      DEBUG: "1"
+    volumes:
+      - ./Retales/materiales:/app
+    restart: "no"

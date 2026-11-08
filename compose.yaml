@@ -1,0 +1,120 @@
+name: retales
+# retales -------------> materiales
+#     |    services-net      |
+# retales-net           materiales-net
+#     |                      |
+# db_retales            db_materiales
+services:
+#-----------------retales aplicación django
+  retales:
+    build: ./Retales/retales_proyecto
+    container_name: retales
+    ports:
+      - "8000:8000"
+    environment:
+      SECRET_KEY: ${RETALES_SECRET_KEY:?Define RETALES_SECRET_KEY en .env}
+      DEBUG: ${DJANGO_DEBUG:-0}
+      ALLOWED_HOSTS: ${RETALES_ALLOWED_HOSTS:-localhost,127.0.0.1}
+      CSRF_TRUSTED_ORIGINS: ${RETALES_CSRF_TRUSTED_ORIGINS:-}
+      DB_NAME: ${RETALES_DB_NAME:?Define RETALES_DB_NAME en .env}
+      DB_USER: ${RETALES_DB_USER:?Define RETALES_DB_USER en .env}
+      DB_PASSWORD: ${RETALES_DB_PASSWORD:?Define RETALES_DB_PASSWORD en .env}
+      DB_HOST: db_retales
+      DB_PORT: "5432"
+      MICROSERVICE_URL: http://materiales:8000
+      SERVICE_TOKEN: ${SERVICE_TOKEN:?Define SERVICE_TOKEN en .env}
+      DJANGO_SUPERUSER_USERNAME: ${DJANGO_SUPERUSER_USERNAME:-}
+      DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL:-}
+      DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD:-}
+    depends_on:
+      db_retales:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - retales_net
+      - services_net
+    restart: unless-stopped
+# ---------------retales base de datos
+  db_retales:
+    build: ./Retales/db_retales
+    container_name: db_retales
+    environment:
+      POSTGRES_DB: ${RETALES_DB_NAME}
+      POSTGRES_USER: ${RETALES_DB_USER}
+      POSTGRES_PASSWORD: ${RETALES_DB_PASSWORD}
+    volumes:
+      - retales_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - retales_net
+    restart: unless-stopped
+
+  # -------------retales materiales django
+  materiales:
+    build: ./Retales/materiales
+    container_name: materiales
+    # Solo accesible desde tu máquina (para depurar con curl). Entre contenedores
+    # se usa http://materiales:8000 y no hace falta publicar nada.
+    ports:
+      - "127.0.0.1:8001:8000"
+    environment:
+      SECRET_KEY: ${MATERIALES_SECRET_KEY:?Define MATERIALES_SECRET_KEY en .env}
+      DEBUG: ${DJANGO_DEBUG:-0}
+      ALLOWED_HOSTS: ${MATERIALES_ALLOWED_HOSTS:-materiales,localhost,127.0.0.1}
+      DB_NAME: ${MATERIALES_DB_NAME:?Define MATERIALES_DB_NAME en .env}
+      DB_USER: ${MATERIALES_DB_USER:?Define MATERIALES_DB_USER en .env}
+      DB_PASSWORD: ${MATERIALES_DB_PASSWORD:?Define MATERIALES_DB_PASSWORD en .env}
+      DB_HOST: db_materiales
+      DB_PORT: "5432"
+      SERVICE_TOKEN: ${SERVICE_TOKEN:?Define SERVICE_TOKEN en .env}
+    depends_on:
+      db_materiales:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/')"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - materiales_net
+      - services_net
+    restart: unless-stopped
+
+  # --------------materiales base de datos
+  db_materiales:
+    build: ./Retales/db_materiales
+    container_name: db_materiales
+    environment:
+      POSTGRES_DB: ${MATERIALES_DB_NAME}
+      POSTGRES_USER: ${MATERIALES_DB_USER}
+      POSTGRES_PASSWORD: ${MATERIALES_DB_PASSWORD}
+    volumes:
+      - materiales_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - materiales_net
+    restart: unless-stopped
+
+networks:
+  retales_net:     # retales <-> db_retales
+  materiales_net:  # materiales <-> db_materiales
+  services_net:    # retales <-> materiales
+
+volumes:
+  retales_db_data:
+  materiales_db_data:
+
