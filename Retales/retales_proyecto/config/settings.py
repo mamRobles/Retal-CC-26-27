@@ -10,7 +10,10 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.1/ref/settings/
 '''
 import os
+from importlib.util import find_spec
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -48,24 +51,29 @@ INSTALLED_APPS = [
     'users',
     'core',
 ]
-if DEBUG:
-    #solo en develop
-    INSTALLED_APPS +=['django_browser_reload'] # para refresh css automatico
+# Recarga automática del navegador: solo en desarrollo y solo si el paquete está instalado
+# (vive en requirements-dev.txt; la imagen de producción no lo trae).
+BROWSER_RELOAD = DEBUG and find_spec('django_browser_reload') is not None
+if BROWSER_RELOAD:
+    INSTALLED_APPS += ['django_browser_reload']
 
 TAILWIND_APP_NAME = 'theme'
 TAILWIND_USE_STANDALONE_BINARY = True
-TAILWIND_STANDALONE_BINARY_VERSION = "v4.3.0"  
-
+TAILWIND_STANDALONE_BINARY_VERSION = 'v4.3.3'
+TAILWIND_STANDALONE_START_COMMAND_ARGS = '-i static_src/src/styles.css -o static/css/dist/styles.css --watch=always'
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
-    "whitenoise.middleware.WhiteNoiseMiddleware",  # sirve los estáticos sin nginx
+    'whitenoise.middleware.WhiteNoiseMiddleware',  # sirve los estáticos sin nginx
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+if BROWSER_RELOAD:
+    # inyecta el script que recarga la página al cambiar plantillas/CSS
+    MIDDLEWARE += ['django_browser_reload.middleware.BrowserReloadMiddleware']
 
 ROOT_URLCONF = 'config.urls'
 WSGI_APPLICATION = 'config.wsgi.application'
@@ -105,10 +113,10 @@ DATABASES = {
 
 # Password validation
 # https://docs.djangoproject.com/en/6.1/ref/settings/#auth-password-validators
-AUTH_USER_MODEL = "users.User"
-LOGIN_URL = "login"
-LOGIN_REDIRECT_URL = "dashboard"
-LOGOUT_REDIRECT_URL = "home"
+AUTH_USER_MODEL = 'users.User'
+LOGIN_URL = 'login'
+LOGIN_REDIRECT_URL = 'dashboard'
+LOGOUT_REDIRECT_URL = 'home'
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -142,20 +150,20 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
-STATIC_ROOT = BASE_DIR / "staticfiles"  # destino de collectstatic
+STATIC_ROOT = BASE_DIR / 'staticfiles'  # destino de collectstatic
 STORAGES = {
-    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
-    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {'BACKEND': 'whitenoise.storage.CompressedStaticFilesStorage'},
 }
 
-DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 
 # para hablar con el microservicio
-MICROSERVICE_URL = os.environ.get("MICROSERVICE_URL", "http://materiales:8000")
-SERVICE_TOKEN = os.environ.get("SERVICE_TOKEN", "")
+MICROSERVICE_URL = os.environ.get('MICROSERVICE_URL', 'http://materiales:8000')
+SERVICE_TOKEN = os.environ.get('SERVICE_TOKEN', '')
 MICROSERVICE_TIMEOUT = 5  
 
 MAILERS = {

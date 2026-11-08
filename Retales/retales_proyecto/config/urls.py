@@ -1,4 +1,4 @@
-"""
+'''
 URL configuration for retales_proyecto project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
@@ -13,20 +13,17 @@ Class-based views
 Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
-from django.contrib import admin
-from django.urls import path
-from django.views.generic import TemplateView
+'''
 from django.conf import settings
-from django.conf.urls import include
+from django.contrib import admin
+from django.urls import include, path
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path("accounts/", include("users.urls")),
-    path("", include("core.urls")),
+    path('', include('core.urls')),  # /health/ (lo usa el healthcheck de Docker)
 ]
-if settings.DEBUG:
-    # Include django_browser_reload URLs only in DEBUG mode
+if settings.BROWSER_RELOAD:
+    # URLs de django_browser_reload (solo en desarrollo)
     urlpatterns += [
-        path("__reload__/", include("django_browser_reload.urls")),
+        path('__reload__/', include('django_browser_reload.urls')),
     ]
