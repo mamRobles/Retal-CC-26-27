@@ -1,0 +1,206 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+# Permisos mínimos por defecto; el job "publish" pide los suyos aparte.
+permissions:
+  contents: read
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. Linters: ruff (Python) + hadolint (Dockerfiles)
+  # ---------------------------------------------------------------------------
+  ruff:
+    name: Lint Python (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Instalar Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+      - name: Instalar ruff
+        # Misma versión que requirements-dev.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install ruff==0.17.5
+      - name: Ejecutar ruff
+        run: ruff check --output-format=github .
+
+  hadolint:
+    name: Lint Dockerfile (${{ matrix.dockerfile }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        dockerfile:
+          - Retales/retales_proyecto/Dockerfile
+          - Retales/materiales/Dockerfile
+          - Retales/db_retales/Dockerfile
+          - Retales/db_materiales/Dockerfile
+    steps:
+      - uses: actions/checkout@v6
+      - name: Ejecutar hadolint
+        uses: hadolint/hadolint-action@v3.1.0
+        with:
+          dockerfile: ${{ matrix.dockerfile }}
+          failure-threshold: warning
+
+  # ---------------------------------------------------------------------------
+  # 2. Pruebas unitarias 
+  # ---------------------------------------------------------------------------
+  test:
+    name: Tests unitarios (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    needs: [ruff, hadolint]
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [retales_proyecto, materiales]
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: ci_db
+          POSTGRES_USER: ci_user
+          POSTGRES_PASSWORD: ci_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci_user -d ci_db"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      SECRET_KEY: ci-only-secret-key
+      DEBUG: "0"
+      DB_HOST: localhost
+      DB_PORT: "5432"
+      DB_NAME: ci_db
+      DB_USER: ci_user
+      DB_PASSWORD: ci_password
+      SERVICE_TOKEN: ci-service-token
+    defaults:
+      run:
+        working-directory: Retales/${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Instalar Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: Retales/${{ matrix.service }}/requirements.txt
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Comprobar que no faltan migraciones
+        run: python manage.py makemigrations --check --dry-run
+      - name: Ejecutar tests
+        run: python manage.py test --verbosity 2
+
+  # ---------------------------------------------------------------------------
+  # 3. Pruebas de integración: se levanta el compose real y se prueba de extremo
+  #    a extremo.
+  # ---------------------------------------------------------------------------
+  integration:
+    name: Integración (docker compose)
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Crear .env a partir del ejemplo
+        run: cp .env.ejemplo .env
+
+      - name: Levantar el entorno
+        # -f compose.yaml: ignora compose.override.yaml (que es solo de desarrollo)
+        run: docker compose -f compose.yaml up -d --build --wait --wait-timeout 300
+
+      - name: Health checks
+        run: |
+          curl --fail --silent --show-error --retry 5 --retry-delay 3 http://localhost:8000/health/
+          echo
+          curl --fail --silent --show-error --retry 5 --retry-delay 3 http://127.0.0.1:8001/health/
+          echo
+
+      - name: La API de materiales rechaza peticiones sin token
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8001/api/items/)
+          echo "HTTP $code"
+          test "$code" = "401"
+
+      - name: Retales se comunica con materiales (crear y listar)
+        run: |
+          docker compose -f compose.yaml exec -T retales python manage.py shell -c "
+          from core import services
+          services.create_item('ci-item', 'creado por el CI', 'ci')
+          assert any(i['title'] == 'ci-item' for i in services.list_items())
+          print('OK: retales -> materiales')
+          "
+
+      - name: Logs (solo si falla)
+        if: failure()
+        run: docker compose -f compose.yaml logs --no-color
+
+      - name: Apagar y limpiar
+        if: always()
+        run: docker compose -f compose.yaml down -v
+
+  # ---------------------------------------------------------------------------
+  # 4. Publicación en GitHub Container Registry (solo push a main)
+  # ---------------------------------------------------------------------------
+  publish:
+    name: Publicar imagen (${{ matrix.service }})
+    runs-on: ubuntu-latest
+    needs: [integration]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: retales
+            context: Retales/retales_proyecto
+          - service: materiales
+            context: Retales/materiales
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Nombre de imagen 
+        run: echo "IMAGE=ghcr.io/${GITHUB_REPOSITORY_OWNER,,}/${{ matrix.service }}" >> "$GITHUB_ENV"
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Login en GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Etiquetas y metadatos
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.IMAGE }}
+          tags: |
+            type=sha,format=long
+            type=raw,value=latest
+
+      - name: Construir y publicar
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.service }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.service }}
