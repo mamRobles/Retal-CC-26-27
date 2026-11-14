@@ -17,10 +17,17 @@ Including another URLconf
 from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
+from proyectos import views as proyectos_views
+from users import views as users_views
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('cuenta/', include('django.contrib.auth.urls')),   # login/logout/password_change/reset
+    path('registro/', users_views.registro, name='registro'),
+    path('buscar/', proyectos_views.BusquedaView.as_view(), name='busqueda'),
     path('', include('core.urls')),  # /health/ (lo usa el healthcheck de Docker)
+    path('<str:username>/', include('users.urls')), #todos los usuarios existentes
+
 ]
 if settings.BROWSER_RELOAD:
     # URLs de django_browser_reload (solo en desarrollo)
