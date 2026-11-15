@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     'theme', #app de tailwindcss con las templates
     'users',
     'core',
+    'proyectos',
 ]
 # Recarga automática del navegador: solo en desarrollo y solo si el paquete está instalado
 # (vive en requirements-dev.txt; la imagen de producción no lo trae).
