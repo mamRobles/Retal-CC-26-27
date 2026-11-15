@@ -9,7 +9,7 @@ class Item(models.Model):
     grosor_lana = models.TextField(blank=True)
     
     class Meta:
-        ordering = ['-creado_a']
+        ordering = ['-creado_a']  # noqa: RUF012 (cambiarlo a tupla generaría una migración)
 
     def __str__(self):
         return self.titulo
