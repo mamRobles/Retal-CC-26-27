@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}Buscar proyectos{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Buscar proyectos</h1>
+
+<form method="get" class="flex gap-2 mb-6">
+    <input type="search" name="q" value="{{ q }}" placeholder="Título, descripción o técnica…"
+           class="flex-1 rounded-lg border border-gray-300 px-3 py-2">
+    <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">Buscar</button>
+</form>
+
+{% include "proyectos/_lista.html" with mostrar_autor=True %}
+
+{% if page_obj.has_other_pages %}
+<div class="mt-6 flex gap-4 text-sm">
+    {% if page_obj.has_previous %}<a href="?q={{ q|urlencode }}&page={{ page_obj.previous_page_number }}" class="text-indigo-600">← Anterior</a>{% endif %}
+    <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a href="?q={{ q|urlencode }}&page={{ page_obj.next_page_number }}" class="text-indigo-600">Siguiente →</a>{% endif %}
+</div>
+{% endif %}
+{% endblock %}

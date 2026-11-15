@@ -1,19 +1,40 @@
 {% load static tailwind_tags %}
 <!DOCTYPE html>
-<html lang='es'>
+<html lang="es">
 <head>
-    <title>Django Tailwind</title>
-    <meta charset='UTF-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Retales{% endblock %}</title>
     {% tailwind_css %}
 </head>
+<body class="min-h-screen bg-gray-50 text-gray-900">
 
-<body class='bg-gray-50 text-black font-serif leading-normal tracking-normal'>
+<nav class="bg-white border-b border-gray-200">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">
+        <a href="{% url 'home' %}" class="font-bold text-indigo-600">Retales</a>
+        <a href="{% url 'busqueda' %}" class="text-sm text-gray-600 hover:text-gray-900">Buscar</a>
+        <div class="ml-auto flex items-center gap-4 text-sm">
+            {% if user.is_authenticated %}
+                <a href="{% url 'perfil' user.username %}" class="text-gray-600 hover:text-gray-900">{{ user.username }}</a>
+                {% if user.is_staff %}
+                    <a href="{% url 'admin:index' %}" class="text-gray-600 hover:text-gray-900">Admin</a>
+                {% endif %}
+                {# Desde Django 5 el logout solo acepta POST #}
+                <form method="post" action="{% url 'logout' %}">
+                    {% csrf_token %}
+                    <button type="submit" class="text-gray-600 hover:text-gray-900">Salir</button>
+                </form>
+            {% else %}
+                <a href="{% url 'login' %}" class="text-gray-600 hover:text-gray-900">Entrar</a>
+                <a href="{% url 'registro' %}" class="rounded-lg bg-indigo-600 px-3 py-1.5 text-white hover:bg-indigo-700">Registrarse</a>
+            {% endif %}
+        </div>
+    </div>
+</nav>
 
-<div class='container mx-auto'>
-    <section class='flex items-center justify-center h-screen'>
-        <h1 class='text-5xl'>Django + Tailwind = ❤️</h1>
-    </section>
-</div>
+<main class="max-w-4xl mx-auto px-4 py-8">
+    {% block content %}{% endblock %}
+</main>
+
 </body>
 </html>
