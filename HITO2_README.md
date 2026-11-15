@@ -1,7 +1,7 @@
 # Hito 2
 ## ¿Cómo ejecutar la aplicación?
 Primero creamos nuestras claves env y después hacemos un docker compose up:
-`$ cp .env.ejemplo .env && docker compose up --build`
+`$ cp .env.example .env && docker compose up --build`
 ## Cómo funcionan los docker de postgres
 Postgres arranca como root y su entrypoint es el que se encarga de bajar al usuario postgres sin acceso root.
 ## Justificaciones de las imágenes docker utilizadas

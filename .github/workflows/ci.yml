@@ -116,7 +116,7 @@ jobs:
       - uses: actions/checkout@v6
 
       - name: Crear .env a partir del ejemplo
-        run: cp .env.ejemplo .env
+        run: cp .env.example .env
 
       - name: Levantar el entorno
         # -f compose.yaml: ignora compose.override.yaml (que es solo de desarrollo)
