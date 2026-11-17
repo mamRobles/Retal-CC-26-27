@@ -11,6 +11,14 @@
 
 <ul class="space-y-3">
     {% for m in materiales %}
+        <p class="text-sm text-gray-600">
+        {{ m.yarn_weight_display }}{% if m.brand %} · {{ m.brand }}{% endif %}
+        {% if m.needle_mm %} · aguja {{ m.needle_mm }} mm{% endif %}
+        {% if m.hook_mm %} · ganchillo {{ m.hook_mm }} mm{% endif %}
+        </p>
+        <p class="text-xs text-gray-500">
+        {% for c in m.composition %}{{ c.percent|floatformat:"-2" }}% {{ c.fiber_display }}{% if not forloop.last %}, {% endif %}{% endfor %}
+        </p>
         <li class="bg-white rounded-xl shadow-sm p-4">
             <p class="font-semibold">{{ m.title }}</p>
             {% if m.description %}<p class="text-sm text-gray-600">{{ m.description }}</p>{% endif %}

@@ -42,7 +42,11 @@ class ItemTestCase(TestCase):
         self.assertEqual(len(items), 2)
         # el contrato JSON está en inglés aunque el modelo esté en español
         self.assertEqual(
-            set(items[0]), {'id', 'title', 'description', 'created_by', 'created_at'}
+            set(items[0]),
+            {
+                'id', 'title', 'description', 'created_by', 'created_at', 'yarn_weight',
+                'yarn_weight_display', 'needle_mm', 'hook_mm', 'brand', 'composition',
+            },
         )
         self.assertEqual({i['title'] for i in items}, {'Lana merino', 'Ganchillo 4mm'})
 
@@ -85,3 +89,41 @@ class ItemTestCase(TestCase):
         response = self.client.get('/health/')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {'status': 'ok'})
+
+@override_settings(SERVICE_TOKEN=TOKEN)
+class ComposicionTestCase(TestCase):
+    def _post(self, payload):
+        return self.client.post(
+            URL, data=json.dumps(payload), content_type='application/json',
+            headers={'X-Service-Token': TOKEN},
+        )
+
+    def test_crear_con_composicion(self):
+        response = self._post({
+            'title': 'Drops Nepal', 'created_by': 'ana', 'yarn_weight': 'aran',
+            'needle_mm': '5.0', 'brand': 'Drops',
+            'composition': [{'fiber': 'lana', 'percent': '65'}, {'fiber': 'merino', 'percent': '35'}],
+        })
+        self.assertEqual(response.status_code, 201)
+        data = response.json()
+        self.assertEqual(data['yarn_weight'], 'aran')
+        self.assertEqual(data['needle_mm'], '5.00')
+        self.assertEqual(len(data['composition']), 2)
+
+    def test_porcentajes_que_suman_mas_de_100(self):
+        response = self._post({
+            'title': 'X', 'created_by': 'ana',
+            'composition': [{'fiber': 'lana', 'percent': '80'}, {'fiber': 'seda', 'percent': '30'}],
+        })
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(Item.objects.exists())  # no queda el item a medias
+
+    def test_fibra_repetida_o_invalida(self):
+        repetida = [{'fiber': 'lana', 'percent': '50'}, {'fiber': 'lana', 'percent': '50'}]
+        self.assertEqual(self._post({'title': 'X', 'created_by': 'ana', 'composition': repetida}).status_code, 400)
+        invalida = [{'fiber': 'oro', 'percent': '50'}]
+        self.assertEqual(self._post({'title': 'X', 'created_by': 'ana', 'composition': invalida}).status_code, 400)
+
+    def test_grosor_y_aguja_invalidos(self):
+        self.assertEqual(self._post({'title': 'X', 'created_by': 'ana', 'yarn_weight': 'gordo'}).status_code, 400)
+        self.assertEqual(self._post({'title': 'X', 'created_by': 'ana', 'needle_mm': '50'}).status_code, 400)

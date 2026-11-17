@@ -37,5 +37,5 @@ def create_item(title, description, created_by):
     return _request(
         'POST',
         '/api/items/',
-        json={'title': title, 'description': description, 'created_by': created_by},
+        json={'title': title, 'description': description, 'created_by': created_by, **extra},   
     )
