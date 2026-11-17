@@ -1,0 +1,8 @@
+staticfiles
+theme/static/css/dist/styles.css
+__pycache__
+*.pyc
+.git
+.env
+.venv
+db.sqlite3

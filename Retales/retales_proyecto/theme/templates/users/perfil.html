@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block title %}{{ perfil.username }}{% endblock %}
+
+{% block content %}
+<h1 class="text-3xl font-bold">{{ perfil.username }}</h1>
+<p class="text-sm text-gray-500">Miembro desde {{ perfil.date_joined|date:"F Y" }}</p>
+
+<div class="mt-4 flex gap-3 text-sm">
+    <a href="{% url 'proyecto_list' perfil.username %}" class="rounded-lg border border-gray-300 px-3 py-1.5 hover:bg-white">Proyectos</a>
+    <a href="{% url 'materiales' perfil.username %}" class="rounded-lg border border-gray-300 px-3 py-1.5 hover:bg-white">Materiales</a>
+</div>
+
+<h2 class="text-xl font-semibold mt-8 mb-3">Proyectos</h2>
+{% include "proyectos/_lista.html" %}
+{% endblock %}
