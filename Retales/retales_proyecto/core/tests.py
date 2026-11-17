@@ -2,6 +2,7 @@
 from unittest.mock import MagicMock, patch
  
 import requests
+from django.core.cache import cache
 from django.test import SimpleTestCase, TestCase, override_settings
  
 from core import services
@@ -71,3 +72,70 @@ class CoreServicesTestCase(SimpleTestCase):
         with self.assertRaises(services.MicroserviceError):
             services.create_item('Lana', '', 'ana')
  
+    def test_un_400_trae_los_errores_por_campo(self, mock_request):
+        error = requests.HTTPError('400')
+        error.response = MagicMock(status_code=400)
+        error.response.json.return_value = {'error': {'tam_aguja_mm': ['Demasiado grande.']}}
+        response = MagicMock()
+        response.raise_for_status.side_effect = error
+        mock_request.return_value = response
+
+        with self.assertRaises(services.MicroserviceError) as ctx:
+            services.create_item('Lana', '', 'ana', needle_mm='50')
+
+        self.assertEqual(ctx.exception.errores, {'tam_aguja_mm': ['Demasiado grande.']})
+
+    def test_un_400_con_mensaje_simple_va_a_errores_generales(self, mock_request):
+        error = requests.HTTPError('400')
+        error.response = MagicMock(status_code=400)
+        error.response.json.return_value = {'error': 'JSON inválido'}
+        response = MagicMock()
+        response.raise_for_status.side_effect = error
+        mock_request.return_value = response
+
+        with self.assertRaises(services.MicroserviceError) as ctx:
+            services.create_item('Lana', '', 'ana')
+
+        self.assertEqual(ctx.exception.errores, {'__all__': ['JSON inválido']})
+
+
+RESPUESTA_CHOICES = {
+    'yarn_weight': [{'value': 'dk', 'label': 'DK (CYC 3)'}],
+    'fiber': [{'value': 'lana', 'label': 'Lana'}, {'value': 'seda', 'label': 'Seda'}],
+}
+
+
+@override_settings(MICROSERVICE_URL='http://materiales:8000', SERVICE_TOKEN='tok')
+@patch('core.services.requests.request')
+class GetChoicesTestCase(SimpleTestCase):
+
+    def setUp(self):
+        cache.delete(services.CHOICES_CACHE_KEY)
+
+    def _respuesta(self):
+        response = MagicMock()
+        response.json.return_value = RESPUESTA_CHOICES
+        return response
+
+    def test_convierte_al_formato_de_choicefield(self, mock_request):
+        mock_request.return_value = self._respuesta()
+
+        choices = services.get_choices()
+
+        self.assertEqual(mock_request.call_args.args, ('GET', 'http://materiales:8000/api/choices/'))
+        self.assertEqual(choices['yarn_weight'], [('dk', 'DK (CYC 3)')])
+        self.assertEqual(choices['fiber'], [('lana', 'Lana'), ('seda', 'Seda')])
+
+    def test_se_cachea_y_solo_llama_una_vez(self, mock_request):
+        mock_request.return_value = self._respuesta()
+
+        services.get_choices()
+        services.get_choices()
+
+        mock_request.assert_called_once()
+
+    def test_si_el_servicio_cae_lanza_microservice_error(self, mock_request):
+        mock_request.side_effect = requests.ConnectionError('caído')
+
+        with self.assertRaises(services.MicroserviceError):
+            services.get_choices()

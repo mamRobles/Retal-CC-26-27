@@ -2,7 +2,7 @@ import json
 
 from django.test import TestCase, override_settings
 
-from .models import Item
+from .models import Composicion, Item
 
 TOKEN = 'tokenfalso'
 URL = '/api/items/'
@@ -127,3 +127,26 @@ class ComposicionTestCase(TestCase):
     def test_grosor_y_aguja_invalidos(self):
         self.assertEqual(self._post({'title': 'X', 'created_by': 'ana', 'yarn_weight': 'gordo'}).status_code, 400)
         self.assertEqual(self._post({'title': 'X', 'created_by': 'ana', 'needle_mm': '50'}).status_code, 400)
+
+@override_settings(SERVICE_TOKEN=TOKEN)
+class ChoicesTestCase(TestCase):
+    URL = '/api/choices/'
+
+    def test_sin_token_devuelve_401(self):
+        self.assertEqual(self.client.get(self.URL).status_code, 401)
+
+    def test_devuelve_las_opciones_de_los_modelos(self):
+        response = self.client.get(self.URL, headers={'X-Service-Token': TOKEN})
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(
+            [(o['value'], o['label']) for o in data['yarn_weight']], Item.TamLana.choices
+        )
+        self.assertEqual(
+            [(o['value'], o['label']) for o in data['fiber']], Composicion.Fibra.choices
+        )
+
+    def test_solo_admite_get(self):
+        response = self.client.post(self.URL, headers={'X-Service-Token': TOKEN})
+        self.assertEqual(response.status_code, 405)

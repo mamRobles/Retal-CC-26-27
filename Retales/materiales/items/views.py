@@ -53,6 +53,21 @@ def health(request):
     return JsonResponse({'status': 'ok'})
 
 
+def _opciones(choices):
+    return [{'value': value, 'label': label} for value, label in choices]
+
+
+@service_token_required
+@require_http_methods(['GET'])
+def choices(request):
+    '''Opciones válidas de los campos con choices. Los modelos de este servicio son
+    la única fuente de verdad: Retales las pide aquí en vez de copiarlas.'''
+    return JsonResponse({
+        'yarn_weight': _opciones(Item.TamLana.choices),
+        'fiber': _opciones(Composicion.Fibra.choices),
+    })
+
+
 @csrf_exempt
 @service_token_required
 @require_http_methods(['GET', 'POST'])

@@ -18,3 +18,4 @@ class SignupForm(UserCreationForm):
         if username.lower() in RESERVADOS:
             raise forms.ValidationError("Este nombre de usuario no está disponible.")
         return username
+

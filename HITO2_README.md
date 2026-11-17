@@ -29,3 +29,6 @@ Son los tests definidos en los dos microservicios de la aplicación (retales_pro
 Esta vez creamos un compose con nuestro compose.yaml real, no uno falso para probar los servicios. Cuando lo lanzamos hacemos curl a las direcciones donde se lanzan los compose y comprobamos también las redes internas en los servicios.
 ### GHCR
 Como queremos publicar correctamente nuestros contenedores de servicio a github, tenemos que subirlos (esos solo, no las bases de datos por dios) al github container registry. Esta action los sube automáticamente. Esta acción solo se hace en push, no en pull request, que sino los subimos sin saber si están bien.
+## Decisiones de diseño
+### ¿Por qué está copiado el form textualmente en MaterialForm? ¡Eso da mil problemas!
+Sí, claro, pero por la arquitectura que se decidió originalmente del microservicio, uno que SOLO tiene base de datos, se asume que expone una api (un contrato) que permite saber qué datos recibe del servicio. En la práctica, no tenemos ese contrato, así que decidimos hacer la cosa más fea del mundo: copiarlo.

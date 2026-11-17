@@ -1,8 +1,7 @@
-from core import services
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404, redirect, render
+from django.shortcuts import redirect, render
 from django.views.decorators.http import require_http_methods
-from django.views.generic import DetailView, TemplateView
+from django.views.generic import DetailView
 
 from .forms import SignupForm
 
@@ -35,22 +34,3 @@ class PerfilView(DetailView):
         ctx['proyectos'] = proyectos if es_propietario else proyectos.filter(publico=True)
         return ctx
 
-
-class MaterialesView(TemplateView):
-    """/<username>/materiales/ : materiales del usuario, pedidos al microservicio."""
-
-    template_name = 'users/materiales.html'
-
-    def get_context_data(self, **kwargs):
-        ctx = super().get_context_data(**kwargs)
-        propietario = get_object_or_404(get_user_model(), username=kwargs['username'])
-        ctx['propietario'] = propietario
-        try:
-            ctx['materiales'] = [
-                i for i in services.list_items() if i['created_by'] == propietario.username
-            ]
-        except services.MicroserviceError as exc:
-            # Si materiales está caído, la página sigue funcionando y avisa.
-            ctx['materiales'] = []
-            ctx['error'] = str(exc)
-        return ctx
