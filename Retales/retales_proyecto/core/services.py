@@ -33,7 +33,7 @@ def list_items():
     return items
 
 
-def create_item(title, description, created_by):
+def create_item(title, description, created_by,**extra):
     return _request(
         'POST',
         '/api/items/',
