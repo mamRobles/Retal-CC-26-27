@@ -160,3 +160,13 @@ class ItemDetailServicesTestCase(SimpleTestCase):
 
         with self.assertRaises(services.MaterialNoEncontrado):
             services.get_item(9999)
+@override_settings(MICROSERVICE_URL='http://materiales:8000', SERVICE_TOKEN='tok')
+@patch('core.services.requests.request')
+class UpdateItemTestCase(SimpleTestCase):
+    def test_hace_put_con_los_campos_en_json(self, mock_request):
+        mock_request.return_value = MagicMock(status_code=200)
+
+        services.update_item(7, title='Nepal', composition=[])
+
+        self.assertEqual(mock_request.call_args.args, ('PUT', 'http://materiales:8000/api/items/7/'))
+        self.assertEqual(mock_request.call_args.kwargs['json'], {'title': 'Nepal', 'composition': []})

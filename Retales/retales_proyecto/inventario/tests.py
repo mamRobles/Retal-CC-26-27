@@ -272,3 +272,103 @@ class MaterialListBotonBorrarTestCase(TestCase):
         self.assertNotContains(self.client.get(url), boton)
         self.client.force_login(ana)
         self.assertContains(self.client.get(url), boton)
+@patch('core.services.get_choices', return_value=CHOICES)
+@patch('core.services.update_item')
+@patch('core.services.get_item')
+class MaterialUpdateViewTestCase(TestCase):
+    def setUp(self):
+        self.ana = User.objects.create_user('ana', 'ana@example.com', 'clave-segura-123')
+        self.luis = User.objects.create_user('luis', 'luis@example.com', 'clave-segura-123')
+        self.url = reverse('material_editar', args=['ana', 1])
+
+    def datos_edicion(self, **extra):
+        # Simula el POST del form precargado: una fila inicial (lana) + una extra vacía.
+        return {
+            'titulo': 'Drops Nepal gris', 'tam_lana': 'aran', 'tam_aguja_mm': '5.00',
+            'marca': 'Drops',
+            'composicion-TOTAL_FORMS': '2', 'composicion-INITIAL_FORMS': '1',
+            'composicion-MIN_NUM_FORMS': '0', 'composicion-MAX_NUM_FORMS': '1000',
+            'composicion-0-fibra': 'lana', 'composicion-0-porcentaje': '100.00',
+            **extra,
+        }
+
+    def test_exige_login(self, mock_get, mock_update, _):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('login'), response.url)
+
+    def test_el_form_sale_precargado(self, mock_get, mock_update, _):
+        mock_get.return_value = ITEM_ANA
+        self.client.force_login(self.ana)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Editar «Drops Nepal»')
+        self.assertEqual(response.context['form'].initial['titulo'], 'Drops Nepal')
+        self.assertEqual(response.context['formset'].forms[0].initial['fibra'], 'lana')
+        mock_update.assert_not_called()
+
+    def test_post_actualiza_y_redirige(self, mock_get, mock_update, _):
+        mock_get.return_value = ITEM_ANA
+        self.client.force_login(self.ana)
+
+        response = self.client.post(self.url, self.datos_edicion())
+
+        self.assertRedirects(response, reverse('materiales', args=['ana']), fetch_redirect_response=False)
+        args, kwargs = mock_update.call_args
+        self.assertEqual(args, (1,))
+        self.assertEqual(kwargs['title'], 'Drops Nepal gris')
+        self.assertEqual(kwargs['composition'], [{'fiber': 'lana', 'percent': '100.00'}])
+        self.assertNotIn('created_by', kwargs)  # el dueño no se envía al editar
+
+    def test_quitar_una_fibra(self, mock_get, mock_update, _):
+        mock_get.return_value = ITEM_ANA
+        self.client.force_login(self.ana)
+
+        self.client.post(self.url, self.datos_edicion(**{
+            'composicion-0-DELETE': 'on',
+            'composicion-1-fibra': 'seda', 'composicion-1-porcentaje': '100',
+        }))
+
+        self.assertEqual(mock_update.call_args.kwargs['composition'], [{'fiber': 'seda', 'percent': '100'}])
+
+    def test_no_se_puede_editar_un_material_ajeno_cambiando_el_id(self, mock_get, mock_update, _):
+        mock_get.return_value = ITEM_LUIS
+        self.client.force_login(self.ana)
+
+        response = self.client.post(reverse('material_editar', args=['ana', 2]), self.datos_edicion())
+
+        self.assertEqual(response.status_code, 404)
+        mock_update.assert_not_called()
+
+    def test_no_se_puede_usar_la_url_de_otro_usuario(self, mock_get, mock_update, _):
+        self.client.force_login(self.luis)
+        self.assertEqual(self.client.get(self.url).status_code, 404)
+        mock_get.assert_not_called()
+
+    def test_material_inexistente_da_404(self, mock_get, mock_update, _):
+        mock_get.side_effect = services.MaterialNoEncontrado('no existe')
+        self.client.force_login(self.ana)
+        self.assertEqual(self.client.get(self.url).status_code, 404)
+
+    def test_errores_400_de_la_api_salen_en_su_campo(self, mock_get, mock_update, _):
+        mock_get.return_value = ITEM_ANA
+        mock_update.side_effect = services.MicroserviceError(
+            'rechazado', {'tam_aguja_mm': ['Aguja no válida.']}
+        )
+        self.client.force_login(self.ana)
+
+        response = self.client.post(self.url, self.datos_edicion())
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context['form'].errors['tam_aguja_mm'], ['Aguja no válida.'])
+
+    def test_si_la_api_cae_se_avisa_sin_romper(self, mock_get, mock_update, _):
+        mock_get.side_effect = services.MicroserviceError('No se pudo contactar.')
+        self.client.force_login(self.ana)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, 503)
+        self.assertNotIn('form', response.context)
