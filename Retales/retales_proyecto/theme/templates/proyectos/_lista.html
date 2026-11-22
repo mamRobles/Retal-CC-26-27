@@ -2,7 +2,7 @@
 <ul class="space-y-3">
     {% for p in proyectos %}
         <li class="bg-white rounded-xl shadow-sm p-4">
-            <a href="{{ p.get_absolute_url }}" class="font-semibold text-indigo-700 hover:underline">{{ p.titulo }}</a>
+            <a href="{{ p.get_absolute_url }}" class="font-semibold text-olive-leaf hover:underline">{{ p.titulo }}</a>
             <span class="ml-2 text-xs text-gray-500">{{ p.get_tecnica_display }} · {{ p.get_estado_display }} · {{ p.progreso }}%</span>
             {% if mostrar_autor %}<span class="ml-2 text-xs text-gray-500">por {{ p.usuario.username }}</span>{% endif %}
             {% if not p.publico %}<span class="ml-2 text-xs rounded bg-gray-100 px-1.5 py-0.5">privado</span>{% endif %}

@@ -7,26 +7,26 @@
     <title>{% block title %}Retales{% endblock %}</title>
     {% tailwind_css %}
 </head>
-<body class="min-h-screen bg-gray-50 text-gray-900">
+<body class="min-h-screen bg-cornsilk text-black-forest">
 
-<nav class="bg-white border-b border-gray-200">
+<nav class="bg-black-forest">
     <div class="max-w-4xl mx-auto px-4 py-3 flex items-center gap-4">
-        <a href="{% url 'home' %}" class="font-bold text-indigo-600">Retales</a>
-        <a href="{% url 'busqueda' %}" class="text-sm text-gray-600 hover:text-gray-900">Buscar</a>
+        <a href="{% url 'home' %}" class="font-bold text-sunlit-clay">Retales</a>
+        <a href="{% url 'busqueda' %}" class="text-sm text-cornsilk/80 hover:text-cornsilk">Buscar</a>
         <div class="ml-auto flex items-center gap-4 text-sm">
             {% if user.is_authenticated %}
-                <a href="{% url 'perfil' user.username %}" class="text-gray-600 hover:text-gray-900">{{ user.username }}</a>
+                <a href="{% url 'perfil' user.username %}" class="text-cornsilk/80 hover:text-cornsilk">{{ user.username }}</a>
                 {% if user.is_staff %}
-                    <a href="{% url 'admin:index' %}" class="text-gray-600 hover:text-gray-900">Admin</a>
+                    <a href="{% url 'admin:index' %}" class="text-cornsilk/80 hover:text-cornsilk">Admin</a>
                 {% endif %}
                 {# Desde Django 5 el logout solo acepta POST #}
                 <form method="post" action="{% url 'logout' %}">
                     {% csrf_token %}
-                    <button type="submit" class="text-gray-600 hover:text-gray-900">Salir</button>
+                    <button type="submit" class="text-cornsilk/80 hover:text-cornsilk">Salir</button>
                 </form>
             {% else %}
-                <a href="{% url 'login' %}" class="text-gray-600 hover:text-gray-900">Entrar</a>
-                <a href="{% url 'registro' %}" class="rounded-lg bg-indigo-600 px-3 py-1.5 text-white hover:bg-indigo-700">Registrarse</a>
+                <a href="{% url 'login' %}" class="text-cornsilk/80 hover:text-cornsilk">Entrar</a>
+                <a href="{% url 'registro' %}" class="btn-estrellas btn-estrellas--sm">Registrarse{% include "_estrellas.html" %}</a>
             {% endif %}
         </div>
     </div>

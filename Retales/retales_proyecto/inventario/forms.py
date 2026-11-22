@@ -10,6 +10,7 @@ antes de hacer la petición.
 from decimal import Decimal
 
 from core import services
+from core.widgets import CasillaNeon
 from django import forms
 
 TAM_MM = {
@@ -67,6 +68,8 @@ class ComposicionForm(forms.Form):
 
 
 class BaseComposicionFormSet(forms.BaseFormSet):
+    deletion_widget = CasillaNeon  # casilla "Quitar" con el estilo neón
+
     def _filas(self):
         '''Filas rellenas y no marcadas para borrar (las vacías del "extra" se ignoran).'''
         return [

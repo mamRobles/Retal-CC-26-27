@@ -1,0 +1,11 @@
+{# Barra de progreso. Uso: {% include "proyectos/_barra_progreso.html" with progreso=proyecto.progreso %} #}
+{# From Uiverse.io by rust_1966 - https://uiverse.io/rust_1966/tall-fly-13 · MIT License, Copyright (c) rust_1966 (RustcodeWeb) #}
+<div class="barra-progreso{% if not progreso %} barra-progreso--vacia{% endif %}"
+     style="--progreso: {{ progreso|default:0 }}%"
+     role="progressbar" aria-label="Progreso" aria-valuemin="0" aria-valuemax="100" aria-valuenow="{{ progreso|default:0 }}">
+    <div class="barra-progreso__barra"></div>
+    <div class="barra-progreso__texto">{{ progreso|default:0 }}%</div>
+    <div class="barra-progreso__particulas" aria-hidden="true">
+        <span></span><span></span><span></span><span></span><span></span>
+    </div>
+</div>

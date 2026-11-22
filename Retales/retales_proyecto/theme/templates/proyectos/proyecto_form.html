@@ -20,12 +20,12 @@
             <div class="[&_input:not([type=checkbox])]:w-full [&_textarea]:w-full [&_select]:w-full [&_input]:rounded-lg [&_textarea]:rounded-lg [&_select]:rounded-lg [&_input]:border [&_textarea]:border [&_select]:border [&_input]:border-gray-300 [&_textarea]:border-gray-300 [&_select]:border-gray-300 [&_input]:px-3 [&_input]:py-2 [&_textarea]:px-3 [&_textarea]:py-2 [&_select]:px-3 [&_select]:py-2">
                 {{ field }}
             </div>
-            {% for error in field.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
+            {% for error in field.errors %}<p class="mt-1 text-sm text-copperwood-oscuro">{{ error }}</p>{% endfor %}
         </div>
     {% endfor %}
     <div class="flex gap-3">
-        <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700">Guardar</button>
-        <a href="{% url 'proyecto_list' propietario.username %}" class="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50">Cancelar</a>
+        <button type="submit" class="btn-estrellas">Guardar{% include "_estrellas.html" %}</button>
+        <a href="{% url 'proyecto_list' propietario.username %}" class="rounded-lg border-2 border-copperwood px-4 py-2 text-black-forest hover:bg-sunlit-clay/25">Cancelar</a>
     </div>
 </form>
 {% endblock %}

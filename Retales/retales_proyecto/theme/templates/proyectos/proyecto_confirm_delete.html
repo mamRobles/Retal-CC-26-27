@@ -8,8 +8,8 @@
     <p class="mt-2 text-gray-600">Esta acción no se puede deshacer.</p>
     <form method="post" class="mt-6 flex gap-3">
         {% csrf_token %}
-        <button type="submit" class="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700">Sí, borrar</button>
-        <a href="{{ proyecto.get_absolute_url }}" class="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50">Cancelar</a>
+        <button type="submit" class="btn-estrellas btn-estrellas--peligro">Sí, borrar{% include "_estrellas.html" %}</button>
+        <a href="{{ proyecto.get_absolute_url }}" class="rounded-lg border-2 border-copperwood px-4 py-2 text-black-forest hover:bg-sunlit-clay/25">Cancelar</a>
     </form>
 </div>
 {% endblock %}

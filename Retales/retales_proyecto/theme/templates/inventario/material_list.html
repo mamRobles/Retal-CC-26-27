@@ -6,7 +6,7 @@
 <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-bold">Materiales de {{ propietario.username }}</h1>
     {% if es_propietario and not error %}
-        <a href="{% url 'material_agregar' propietario.username %}" class="rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">Nuevo material</a>
+        <a href="{% url 'material_agregar' propietario.username %}" class="btn-estrellas">Nuevo material{% include "_estrellas.html" %}</a>
     {% endif %}
 </div>
 
@@ -21,8 +21,8 @@
                 <p class="font-semibold">{{ m.title }}</p>
                 {% if es_propietario %}
                     <div class="flex gap-3 text-sm">
-                        <a href="{% url 'material_editar' propietario.username m.id %}" class="text-indigo-600 hover:underline">Editar</a>
-                        <a href="{% url 'material_borrar' propietario.username m.id %}" class="text-red-600 hover:underline">Borrar</a>
+                        <a href="{% url 'material_editar' propietario.username m.id %}" class="text-olive-leaf hover:underline">Editar</a>
+                        <a href="{% url 'material_borrar' propietario.username m.id %}" class="text-copperwood-oscuro hover:underline">Borrar</a>
                     </div>
                 {% endif %}
             </div>

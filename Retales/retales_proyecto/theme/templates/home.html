@@ -6,11 +6,12 @@
     <p class="mt-4 text-gray-600">Tus proyectos de punto, ganchillo y bordado en la nube.</p>
     <div class="mt-8 flex justify-center gap-3">
         {% if user.is_authenticated %}
-            <a href="{% url 'proyecto_list' user.username %}" class="rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">Mis proyectos</a>
+            <a href="{% url 'proyecto_list' user.username %}" class="btn-estrellas">Mis proyectos{% include "_estrellas.html" %}</a>
+            <a href="{% url 'materiales' user.username %}" class="btn-estrellas">Mis materiales{% include "_estrellas.html" %}</a>
         {% else %}
-            <a href="{% url 'registro' %}" class="rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">Crear cuenta</a>
+            <a href="{% url 'registro' %}" class="btn-estrellas">Crear cuenta{% include "_estrellas.html" %}</a>
         {% endif %}
-        <a href="{% url 'busqueda' %}" class="rounded-lg border border-gray-300 px-4 py-2 hover:bg-white">Explorar proyectos</a>
+        <a href="{% url 'busqueda' %}" class="rounded-lg border-2 border-copperwood px-4 py-2 text-black-forest hover:bg-sunlit-clay/25">Explorar proyectos</a>
     </div>
 </section>
 {% endblock %}

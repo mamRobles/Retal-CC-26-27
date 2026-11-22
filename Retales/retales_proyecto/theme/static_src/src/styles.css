@@ -8,3 +8,488 @@
   * the scope of this path.
   */
 @source '../../../**/*.{html,py,js}';
+
+/* ============================================================
+   Paleta de Retales.
+   Cada --color-x genera las clases bg-x, text-x, border-x, ring-x...
+   (p. ej. bg-olive-leaf, text-black-forest, border-copperwood/40).
+   ============================================================ */
+@theme {
+    --color-olive-leaf: #606c38;
+    --color-black-forest: #283618;
+    --color-cornsilk: #fefae0;
+    --color-sunlit-clay: #dda15e;
+    --color-copperwood: #bc6c25;
+    /* copperwood mezclado con black-forest: copperwood solo no llega al contraste
+       mínimo para texto pequeño (4.5:1). Se usa para errores y para "borrar". */
+    --color-copperwood-oscuro: #905c21;
+}
+
+/* ============================================================
+   Botón con estrellas (adaptado de Uiverse.io, by MuhammadHasann).
+   Uso:
+     <button class="btn-estrellas">Guardar{% include "_estrellas.html" %}</button>
+     <a class="btn-estrellas" href="...">Nuevo{% include "_estrellas.html" %}</a>
+   Variantes: btn-estrellas--peligro (borrar), btn-estrellas--sm (menú).
+   ============================================================ */
+@layer base {
+    /* Casillas y radios con el color de la paleta en vez del azul del navegador. */
+    input[type='checkbox'],
+    input[type='radio'] {
+        accent-color: var(--color-olive-leaf);
+    }
+}
+
+@layer components {
+    .btn-estrellas {
+        --btn-color: var(--color-olive-leaf);
+        --btn-texto: var(--color-cornsilk);
+        --btn-brillo: color-mix(in srgb, var(--btn-color) 55%, transparent);
+        --estrella: var(--color-sunlit-clay);
+
+        position: relative;
+        display: inline-block;
+        padding: 0.6rem 1.75rem;
+        background: var(--btn-color);
+        font-weight: 600;
+        line-height: 1.5;
+        text-align: center;
+        text-decoration: none;
+        color: var(--btn-texto);
+        border: 3px solid var(--btn-color);
+        border-radius: 8px;
+        box-shadow: 0 0 0 transparent;
+        transition: all 0.3s ease-in-out;
+        cursor: pointer;
+    }
+
+    .btn-estrellas:hover,
+    .btn-estrellas:focus-visible {
+        background: transparent;
+        color: var(--btn-color);
+        box-shadow: 0 0 25px var(--btn-brillo);
+    }
+
+    .btn-estrellas:focus-visible {
+        outline: 2px solid var(--color-copperwood);
+        outline-offset: 3px;
+    }
+
+    .btn-estrellas--peligro {
+        --btn-color: var(--color-copperwood-oscuro);
+    }
+
+    .btn-estrellas--sm {
+        padding: 0.3rem 1rem;
+        border-width: 2px;
+        font-size: 0.875rem;
+    }
+
+    /* Las estrellas: escondidas detrás del botón; al pasar el ratón salen volando. */
+    .btn-estrellas .estrella {
+        position: absolute;
+        height: auto;
+        filter: drop-shadow(0 0 0 var(--estrella));
+        z-index: -5;
+        pointer-events: none;
+    }
+
+    .btn-estrellas .estrella svg {
+        display: block;
+        width: 100%;
+        height: auto;
+        fill: var(--estrella);
+    }
+
+    .btn-estrellas .estrella-1 { top: 20%; left: 20%; width: 25px; transition: all 1s cubic-bezier(0.05, 0.83, 0.43, 0.96); }
+    .btn-estrellas .estrella-2 { top: 45%; left: 45%; width: 15px; transition: all 1s cubic-bezier(0, 0.4, 0, 1.01); }
+    .btn-estrellas .estrella-3 { top: 40%; left: 40%; width: 5px;  transition: all 1s cubic-bezier(0, 0.4, 0, 1.01); }
+    .btn-estrellas .estrella-4 { top: 20%; left: 40%; width: 8px;  transition: all 0.8s cubic-bezier(0, 0.4, 0, 1.01); }
+    .btn-estrellas .estrella-5 { top: 25%; left: 45%; width: 15px; transition: all 0.6s cubic-bezier(0, 0.4, 0, 1.01); }
+    .btn-estrellas .estrella-6 { top: 5%;  left: 50%; width: 5px;  transition: all 0.8s ease; }
+
+    .btn-estrellas:is(:hover, :focus-visible) .estrella {
+        /* Al salir, estrellas sunlit-clay con un halo copperwood para que se vean sobre fondo claro. */
+        filter: drop-shadow(0 0 3px var(--color-copperwood));
+        z-index: 2;
+    }
+
+    .btn-estrellas:is(:hover, :focus-visible) .estrella-1 { top: -80%; left: -30%; }
+    .btn-estrellas:is(:hover, :focus-visible) .estrella-2 { top: -25%; left: 10%; }
+    .btn-estrellas:is(:hover, :focus-visible) .estrella-3 { top: 55%;  left: 25%; }
+    .btn-estrellas:is(:hover, :focus-visible) .estrella-4 { top: 30%;  left: 80%; }
+    /* En el original va a left: 115%, pero pisa el botón de al lado: se sube a la esquina. */
+    .btn-estrellas:is(:hover, :focus-visible) .estrella-5 { top: -45%; left: 92%; }
+    .btn-estrellas:is(:hover, :focus-visible) .estrella-6 { top: 5%;   left: 60%; }
+
+    /* Quien tenga activado "reducir movimiento" ve el cambio de color, sin estrellas volando. */
+    @media (prefers-reduced-motion: reduce) {
+        .btn-estrellas,
+        .btn-estrellas .estrella {
+            transition: none;
+        }
+        .btn-estrellas .estrella {
+            display: none;
+        }
+    }
+}
+
+/* ============================================================
+   Casilla neón (core.widgets.CasillaNeon / CasillasNeon).
+   From Uiverse.io by 00Kubi - https://uiverse.io/00Kubi/hot-dragonfly-56
+   MIT License, Copyright (c) 00Kubi (Kubi)
+
+   Cambios respecto al original:
+   - Colores de la paleta: fondo crema, check olive-leaf y brillo sunlit-clay.
+   - El <input> no se oculta con display:none: queda encima, transparente, para que
+     se pueda clicar, enfocar con Tab y marcar con espacio, y los lectores de
+     pantalla lo anuncien.
+   - Clases con prefijo propio (.casilla-neon) para no chocar con nada.
+   ============================================================ */
+@layer components {
+    .casilla-neon {
+        --primary: var(--color-sunlit-clay);
+        --primary-dark: var(--color-copperwood);
+        --primary-light: var(--color-cornsilk);
+        --size: 30px;
+        position: relative;
+        display: inline-block;
+        flex-shrink: 0;
+        vertical-align: middle;
+        width: var(--size);
+        height: var(--size);
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    /* El input real, invisible pero encima de todo: recibe el clic y el foco. */
+    .casilla-neon input {
+        position: absolute;
+        inset: 0;
+        z-index: 3;
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        padding: 0;
+        opacity: 0;
+        cursor: pointer;
+    }
+
+    .casilla-neon__frame,
+    .casilla-neon__effects {
+        display: block;
+    }
+
+    .casilla-neon__frame {
+        position: relative;
+        width: 100%;
+        height: 100%;
+    }
+
+    .casilla-neon__box {
+        position: absolute;
+        inset: 0;
+        background: var(--color-cornsilk);
+        border-radius: 4px;
+        border: 2px solid var(--primary-dark);
+        transition: all 0.4s ease;
+    }
+
+    .casilla-neon__check-container {
+        position: absolute;
+        inset: 2px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .casilla-neon__check {
+        width: 80%;
+        height: 80%;
+        fill: none;
+        /* Sobre fondo crema el check va en olive-leaf: en sunlit-clay apenas se vería. */
+        stroke: var(--color-olive-leaf);
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        stroke-dasharray: 40;
+        stroke-dashoffset: 40;
+        transform-origin: center;
+        transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .casilla-neon__glow {
+        position: absolute;
+        inset: -2px;
+        border-radius: 6px;
+        background: var(--primary);
+        opacity: 0;
+        filter: blur(8px);
+        transform: scale(1.2);
+        transition: all 0.4s ease;
+    }
+
+    .casilla-neon__borders {
+        position: absolute;
+        inset: 0;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+
+    .casilla-neon__borders span {
+        position: absolute;
+        width: 40px;
+        height: 1px;
+        background: var(--primary);
+        opacity: 0;
+        transition: opacity 0.4s ease;
+    }
+
+    .casilla-neon__borders span:nth-child(1) { top: 0; left: -100%; animation: casilla-neon-borde-1 2s linear infinite; }
+    .casilla-neon__borders span:nth-child(2) { top: -100%; right: 0; width: 1px; height: 40px; animation: casilla-neon-borde-2 2s linear infinite; }
+    .casilla-neon__borders span:nth-child(3) { bottom: 0; right: -100%; animation: casilla-neon-borde-3 2s linear infinite; }
+    .casilla-neon__borders span:nth-child(4) { bottom: -100%; left: 0; width: 1px; height: 40px; animation: casilla-neon-borde-4 2s linear infinite; }
+
+    .casilla-neon__particles span {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        background: var(--primary);
+        border-radius: 50%;
+        opacity: 0;
+        pointer-events: none;
+        top: 50%;
+        left: 50%;
+        box-shadow: 0 0 6px var(--primary);
+    }
+
+    .casilla-neon__rings {
+        position: absolute;
+        inset: -20px;
+        pointer-events: none;
+    }
+
+    .casilla-neon__ring {
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        border: 1px solid var(--primary);
+        opacity: 0;
+        transform: scale(0);
+    }
+
+    .casilla-neon__sparks span {
+        position: absolute;
+        width: 20px;
+        height: 1px;
+        background: linear-gradient(90deg, var(--primary), transparent);
+        opacity: 0;
+        pointer-events: none;
+    }
+
+    .casilla-neon:hover .casilla-neon__box {
+        border-color: var(--color-olive-leaf);
+        transform: scale(1.05);
+    }
+
+    .casilla-neon input:focus-visible ~ .casilla-neon__frame .casilla-neon__box {
+        outline: 2px solid var(--color-copperwood);
+        outline-offset: 3px;
+    }
+
+    .casilla-neon input:checked ~ .casilla-neon__frame .casilla-neon__box {
+        border-color: var(--primary-dark);
+        /* Crema con un toque de sunlit-clay, como el tinte del color principal en el original. */
+        background: color-mix(in srgb, var(--primary) 15%, var(--color-cornsilk));
+    }
+
+    .casilla-neon input:checked ~ .casilla-neon__frame .casilla-neon__check {
+        stroke-dashoffset: 0;
+        transform: scale(1.1);
+    }
+
+    .casilla-neon input:checked ~ .casilla-neon__frame .casilla-neon__glow { opacity: 0.2; }
+    .casilla-neon input:checked ~ .casilla-neon__frame .casilla-neon__borders span { opacity: 1; }
+    .casilla-neon input:checked ~ .casilla-neon__frame .casilla-neon__particles span { animation: casilla-neon-particulas 0.6s ease-out forwards; }
+    .casilla-neon input:checked ~ .casilla-neon__frame .casilla-neon__ring { animation: casilla-neon-anillo 0.6s ease-out forwards; }
+    .casilla-neon input:checked ~ .casilla-neon__frame .casilla-neon__sparks span { animation: casilla-neon-chispa 0.6s ease-out forwards; }
+
+    .casilla-neon__particles span:nth-child(1)  { --x: 25px;  --y: -25px; }
+    .casilla-neon__particles span:nth-child(2)  { --x: -25px; --y: -25px; }
+    .casilla-neon__particles span:nth-child(3)  { --x: 25px;  --y: 25px; }
+    .casilla-neon__particles span:nth-child(4)  { --x: -25px; --y: 25px; }
+    .casilla-neon__particles span:nth-child(5)  { --x: 35px;  --y: 0px; }
+    .casilla-neon__particles span:nth-child(6)  { --x: -35px; --y: 0px; }
+    .casilla-neon__particles span:nth-child(7)  { --x: 0px;   --y: 35px; }
+    .casilla-neon__particles span:nth-child(8)  { --x: 0px;   --y: -35px; }
+    .casilla-neon__particles span:nth-child(9)  { --x: 20px;  --y: -30px; }
+    .casilla-neon__particles span:nth-child(10) { --x: -20px; --y: 30px; }
+    .casilla-neon__particles span:nth-child(11) { --x: 30px;  --y: 20px; }
+    .casilla-neon__particles span:nth-child(12) { --x: -30px; --y: -20px; }
+
+    .casilla-neon__sparks span { top: 50%; left: 50%; }
+    .casilla-neon__sparks span:nth-child(1) { --r: 0deg; }
+    .casilla-neon__sparks span:nth-child(2) { --r: 90deg; }
+    .casilla-neon__sparks span:nth-child(3) { --r: 180deg; }
+    .casilla-neon__sparks span:nth-child(4) { --r: 270deg; }
+
+    .casilla-neon__ring:nth-child(1) { animation-delay: 0s; }
+    .casilla-neon__ring:nth-child(2) { animation-delay: 0.1s; }
+    .casilla-neon__ring:nth-child(3) { animation-delay: 0.2s; }
+
+    /* Opción de una lista de casillas: casilla + texto, clicables juntos. */
+    .casilla-neon-opcion {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.25rem 0;
+        cursor: pointer;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .casilla-neon *,
+        .casilla-neon *::before {
+            animation: none !important;
+            transition: none !important;
+        }
+    }
+}
+
+@keyframes casilla-neon-borde-1 { 0% { transform: translateX(0); } 100% { transform: translateX(200%); } }
+@keyframes casilla-neon-borde-2 { 0% { transform: translateY(0); } 100% { transform: translateY(200%); } }
+@keyframes casilla-neon-borde-3 { 0% { transform: translateX(0); } 100% { transform: translateX(-200%); } }
+@keyframes casilla-neon-borde-4 { 0% { transform: translateY(0); } 100% { transform: translateY(-200%); } }
+
+@keyframes casilla-neon-particulas {
+    0% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+    20% { opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--x, 20px)), calc(-50% + var(--y, 20px))) scale(0); opacity: 0; }
+}
+
+@keyframes casilla-neon-anillo {
+    0% { transform: scale(0); opacity: 1; }
+    100% { transform: scale(2); opacity: 0; }
+}
+
+@keyframes casilla-neon-chispa {
+    0% { transform: rotate(var(--r, 0deg)) translateX(0) scale(1); opacity: 1; }
+    100% { transform: rotate(var(--r, 0deg)) translateX(30px) scale(0); opacity: 0; }
+}
+
+/* ============================================================
+   Barra de progreso con brillo y partículas (proyectos/_barra_progreso.html).
+   From Uiverse.io by rust_1966 - https://uiverse.io/rust_1966/tall-fly-13
+   MIT License, Copyright (c) rust_1966 (RustcodeWeb)
+
+   Cambios respecto al original:
+   - El ancho sale de --progreso (lo pone la plantilla) en vez de un 40% fijo.
+   - Colores de la paleta: degradado olive-leaf -> sunlit-clay sobre fondo crema.
+   - Ocupa el ancho disponible (hasta 500px) en vez de un 60% fijo.
+   ============================================================ */
+@layer components {
+    .barra-progreso {
+        position: relative;
+        width: 100%;
+        max-width: 500px;
+        height: 20px;
+        background: radial-gradient(circle, var(--color-cornsilk), color-mix(in srgb, var(--color-sunlit-clay) 22%, var(--color-cornsilk)));
+        border-radius: 30px;
+        overflow: hidden;
+        box-shadow: 0 8px 20px rgba(40, 54, 24, 0.15);
+        box-sizing: border-box;
+        border: 1px solid color-mix(in srgb, var(--color-copperwood) 45%, transparent);
+    }
+
+    .barra-progreso__barra {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: var(--progreso);
+        background: linear-gradient(90deg, var(--color-olive-leaf), var(--color-sunlit-clay));
+        border-radius: 30px;
+        animation: barra-progreso-crece 3s ease-in-out forwards;
+        box-shadow:
+            0 0 15px var(--color-olive-leaf),
+            0 0 30px var(--color-sunlit-clay);
+    }
+
+    /* Con 0 % no hay barra: sin esto se vería un punto de brillo en el borde. */
+    .barra-progreso--vacia .barra-progreso__barra {
+        display: none;
+    }
+
+    .barra-progreso__barra::before {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.15), transparent);
+        opacity: 0.5;
+        animation: barra-progreso-onda 3s infinite;
+    }
+
+    .barra-progreso__texto {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-size: 10px;
+        font-weight: bold;
+        letter-spacing: 1px;
+        /* Con fondo crema el texto va oscuro, con un halo claro para leerse también sobre la barra. */
+        color: var(--color-black-forest);
+        text-shadow: 0 0 3px var(--color-cornsilk), 0 0 6px var(--color-cornsilk);
+        z-index: 2;
+    }
+
+    .barra-progreso__particulas {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+    }
+
+    .barra-progreso__particulas span {
+        position: absolute;
+        width: 4px;
+        height: 4px;
+        background: var(--color-copperwood);
+        border-radius: 50%;
+        opacity: 0.6;
+        animation: barra-progreso-flota 5s infinite ease-in-out;
+    }
+
+    .barra-progreso__particulas span:nth-child(1) { top: 10%; left: 20%; animation-delay: 0s; }
+    .barra-progreso__particulas span:nth-child(2) { top: 30%; left: 70%; animation-delay: 1s; }
+    .barra-progreso__particulas span:nth-child(3) { top: 50%; left: 50%; animation-delay: 2s; }
+    .barra-progreso__particulas span:nth-child(4) { top: 80%; left: 40%; animation-delay: 1.5s; }
+    .barra-progreso__particulas span:nth-child(5) { top: 90%; left: 60%; animation-delay: 2.5s; }
+
+    @media (prefers-reduced-motion: reduce) {
+        .barra-progreso__barra,
+        .barra-progreso__barra::before,
+        .barra-progreso__particulas span {
+            animation: none;
+        }
+    }
+}
+
+@keyframes barra-progreso-crece {
+    0% { width: 0; }
+    100% { width: var(--progreso); }
+}
+
+@keyframes barra-progreso-onda {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0.7; }
+    100% { transform: translate(-50%, -50%) scale(1.5); opacity: 0; }
+}
+
+@keyframes barra-progreso-flota {
+    0% { transform: translateY(0) translateX(0); }
+    50% { transform: translateY(-20px) translateX(10px); }
+    100% { transform: translateY(0) translateX(0); }
+}

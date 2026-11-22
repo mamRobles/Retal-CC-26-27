@@ -1,3 +1,4 @@
+from core.widgets import CasillaNeon, CasillasNeon
 from django import forms
 
 from .models import Proyecto
@@ -10,8 +11,10 @@ class ProyectoForm(forms.ModelForm):
         label='Materiales',
         coerce=int,  # los ids llegan del POST como texto; en el JSONField se guardan como números
         required=False,
-        widget=forms.CheckboxSelectMultiple,
+        widget=CasillasNeon,
     )
+
+    publico = forms.BooleanField(label='Público', required=False, widget=CasillaNeon)
 
     class Meta:
         model = Proyecto
