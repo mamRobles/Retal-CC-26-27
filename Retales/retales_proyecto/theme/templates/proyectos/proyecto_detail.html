@@ -25,6 +25,23 @@
 
     {% if proyecto.descripcion %}<div><h2 class="font-semibold">Descripción</h2><p class="whitespace-pre-line">{{ proyecto.descripcion }}</p></div>{% endif %}
     {% if proyecto.notas %}<div><h2 class="font-semibold">Notas</h2><p class="whitespace-pre-line">{{ proyecto.notas }}</p></div>{% endif %}
+    {% if proyecto.materiales_ids %}
+        <div>
+            <h2 class="font-semibold">Materiales</h2>
+            {% if materiales_error %}
+                <p class="text-sm text-yellow-800">{{ materiales_error }}</p>
+            {% else %}
+                <ul class="mt-1 space-y-1">
+                    {% for m in materiales %}
+                        <li class="text-sm">
+                            <span class="font-medium">{{ m.title }}</span>
+                            <span class="text-gray-500">· {{ m.yarn_weight_display }}{% if m.brand %} · {{ m.brand }}{% endif %}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    {% endif %}
     {% if proyecto.opinion %}<div><h2 class="font-semibold">Opinión final</h2><p class="whitespace-pre-line">{{ proyecto.opinion }}</p></div>{% endif %}
 </div>
 {% endblock %}
