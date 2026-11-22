@@ -72,3 +72,50 @@ class MaterialCreateView(SoloPropietarioMixin, View):
 
         ctx.update(form=form, formset=formset)
         return render(self.request, self.template_name, ctx)
+
+
+class MaterialDeleteView(SoloPropietarioMixin, View):
+    '''/<username>/materiales/<id>/borrar/ : GET pide confirmación, POST borra.'''
+
+    template_name = 'inventario/material_confirm_delete.html'
+
+    def get(self, request, username, item_id):
+        try:
+            material = self._material_propio(item_id)
+        except services.MicroserviceError as exc:
+            return self._sin_servicio(exc)
+        return render(request, self.template_name, {'material': material})
+
+    def post(self, request, username, item_id):
+        try:
+            # Se vuelve a comprobar el dueño: el POST puede llegar sin pasar por el GET.
+            self._material_propio(item_id)
+            services.delete_item(item_id)
+        except services.MicroserviceError as exc:
+            return self._sin_servicio(exc)
+        self._desenlazar_de_proyectos(item_id)
+        return redirect('materiales', username=username)
+
+    def _material_propio(self, item_id):
+        '''El material, si existe y es del usuario logueado; si no, 404.
+
+        El microservicio no conoce a los usuarios finales: esta comprobación es la
+        que impide borrar materiales ajenos cambiando el id de la URL.
+        '''
+        try:
+            material = services.get_item(item_id)
+        except services.MaterialNoEncontrado as exc:
+            raise Http404 from exc
+        if material['created_by'] != self.request.user.username:
+            raise Http404
+        return material
+
+    def _desenlazar_de_proyectos(self, item_id):
+        '''Quita el id borrado de los proyectos del usuario que lo tuvieran enlazado.'''
+        for proyecto in self.request.user.proyectos.all():
+            if item_id in proyecto.materiales_ids:
+                proyecto.materiales_ids = [i for i in proyecto.materiales_ids if i != item_id]
+                proyecto.save(update_fields=['materiales_ids'])
+
+    def _sin_servicio(self, exc):
+        return render(self.request, self.template_name, {'error': str(exc)}, status=503)
