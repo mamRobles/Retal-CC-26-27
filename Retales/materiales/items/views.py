@@ -70,7 +70,7 @@ def choices(request):
 def _leer_payload(request):
     try:
         payload = json.loads(request.body or b'{}')
-    except json.JSONdecodeError:
+    except json.JSONDecodeError:
         return None, None, JsonResponse({'error': 'JSON inválido'}, status=400)
     
     composicion =  payload.get('composition') or []
