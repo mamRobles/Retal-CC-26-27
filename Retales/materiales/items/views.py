@@ -6,7 +6,7 @@ from functools import wraps
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
@@ -53,6 +53,21 @@ def health(request):
     return JsonResponse({'status': 'ok'})
 
 
+def _opciones(choices):
+    return [{'value': value, 'label': label} for value, label in choices]
+
+
+@service_token_required
+@require_http_methods(['GET'])
+def choices(request):
+    '''Opciones válidas de los campos con choices. Los modelos de este servicio son
+    la única fuente de verdad: Retales las pide aquí en vez de copiarlas.'''
+    return JsonResponse({
+        'yarn_weight': _opciones(Item.TamLana.choices),
+        'fiber': _opciones(Composicion.Fibra.choices),
+    })
+
+
 @csrf_exempt
 @service_token_required
 @require_http_methods(['GET', 'POST'])
@@ -96,3 +111,23 @@ def items(request):
 
     item.refresh_from_db() 
     return JsonResponse(serialize(item), status=201)
+
+@csrf_exempt
+@service_token_required
+@require_http_methods(['GET', 'DELETE'])
+def item_detail(request, item_id):
+    '''GET: un material. DELETE: lo borra (su composición se va en cascada).
+
+    Este servicio no sabe quién es el usuario final: comprobar que quien borra es
+    el dueño (created_by) es responsabilidad de Retales.
+    '''
+    try:
+        item = Item.objects.prefetch_related('composicion').get(pk=item_id)
+    except Item.DoesNotExist:
+        return JsonResponse({'error': 'not found'}, status=404)
+
+    if request.method == 'DELETE':
+        item.delete()
+        return HttpResponse(status=204)
+
+    return JsonResponse(serialize(item))

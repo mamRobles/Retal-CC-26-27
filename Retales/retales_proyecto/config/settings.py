@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'users',
     'core',
     'proyectos',
+    'inventario',  # formularios/vistas de materiales (los datos viven en el microservicio)
 ]
 # Recarga automática del navegador: solo en desarrollo y solo si el paquete está instalado
 # (vive en requirements-dev.txt; la imagen de producción no lo trae).

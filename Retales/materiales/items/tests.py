@@ -2,7 +2,7 @@ import json
 
 from django.test import TestCase, override_settings
 
-from .models import Item
+from .models import Composicion, Item
 
 TOKEN = 'tokenfalso'
 URL = '/api/items/'
@@ -127,3 +127,58 @@ class ComposicionTestCase(TestCase):
     def test_grosor_y_aguja_invalidos(self):
         self.assertEqual(self._post({'title': 'X', 'created_by': 'ana', 'yarn_weight': 'gordo'}).status_code, 400)
         self.assertEqual(self._post({'title': 'X', 'created_by': 'ana', 'needle_mm': '50'}).status_code, 400)
+
+@override_settings(SERVICE_TOKEN=TOKEN)
+class ChoicesTestCase(TestCase):
+    URL = '/api/choices/'
+
+    def test_sin_token_devuelve_401(self):
+        self.assertEqual(self.client.get(self.URL).status_code, 401)
+
+    def test_devuelve_las_opciones_de_los_modelos(self):
+        response = self.client.get(self.URL, headers={'X-Service-Token': TOKEN})
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(
+            [(o['value'], o['label']) for o in data['yarn_weight']], Item.TamLana.choices
+        )
+        self.assertEqual(
+            [(o['value'], o['label']) for o in data['fiber']], Composicion.Fibra.choices
+        )
+
+    def test_solo_admite_get(self):
+        response = self.client.post(self.URL, headers={'X-Service-Token': TOKEN})
+        self.assertEqual(response.status_code, 405)
+
+
+@override_settings(SERVICE_TOKEN=TOKEN)
+class ItemDetailTestCase(TestCase):
+    def setUp(self):
+        self.item = Item.objects.create(titulo='Drops Nepal', creado_por='ana')
+        self.item.composicion.create(fibra='lana', porcentaje=100)
+        self.url = f'/api/items/{self.item.id}/'
+        self.auth = {'X-Service-Token': TOKEN}
+
+    def test_sin_token_devuelve_401(self):
+        self.assertEqual(self.client.get(self.url).status_code, 401)
+        self.assertEqual(self.client.delete(self.url).status_code, 401)
+        self.assertTrue(Item.objects.filter(pk=self.item.id).exists())
+
+    def test_get_devuelve_el_material(self):
+        response = self.client.get(self.url, headers=self.auth)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['title'], 'Drops Nepal')
+        self.assertEqual(response.json()['created_by'], 'ana')
+
+    def test_delete_borra_el_material_y_su_composicion(self):
+        response = self.client.delete(self.url, headers=self.auth)
+
+        self.assertEqual(response.status_code, 204)
+        self.assertFalse(Item.objects.filter(pk=self.item.id).exists())
+        self.assertFalse(Composicion.objects.filter(item_id=self.item.id).exists())
+
+    def test_inexistente_devuelve_404(self):
+        self.assertEqual(self.client.get('/api/items/9999/', headers=self.auth).status_code, 404)
+        self.assertEqual(self.client.delete('/api/items/9999/', headers=self.auth).status_code, 404)

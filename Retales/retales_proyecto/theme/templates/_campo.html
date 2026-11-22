@@ -1,0 +1,8 @@
+{# Un campo de formulario con etiqueta, estilo y errores. Uso: {% include "_campo.html" with field=form.titulo %} #}
+<div>
+    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-gray-700 mb-1">{{ field.label }}{% if field.field.required %} <span class="text-red-600">*</span>{% endif %}</label>
+    <div class="[&_input]:w-full [&_textarea]:w-full [&_select]:w-full [&_input]:rounded-lg [&_textarea]:rounded-lg [&_select]:rounded-lg [&_input]:border [&_textarea]:border [&_select]:border [&_input]:border-gray-300 [&_textarea]:border-gray-300 [&_select]:border-gray-300 [&_input]:px-3 [&_input]:py-2 [&_textarea]:px-3 [&_textarea]:py-2 [&_select]:px-3 [&_select]:py-2 [&_select]:bg-white">
+        {{ field }}
+    </div>
+    {% for error in field.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
+</div>

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Materiales de {{ propietario.username }}{% endblock %}
+
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold">Materiales de {{ propietario.username }}</h1>
+    {% if es_propietario and not error %}
+        <a href="{% url 'material_agregar' propietario.username %}" class="rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">Nuevo material</a>
+    {% endif %}
+</div>
+
+{% if error %}
+    <div class="rounded-lg bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800 mb-4">{{ error }}</div>
+{% endif %}
+
+<ul class="space-y-3">
+    {% for m in materiales %}
+        <li class="bg-white rounded-xl shadow-sm p-4">
+            <div class="flex items-start justify-between gap-3">
+                <p class="font-semibold">{{ m.title }}</p>
+                {% if es_propietario %}
+                    <a href="{% url 'material_borrar' propietario.username m.id %}" class="text-sm text-red-600 hover:underline">Borrar</a>
+                {% endif %}
+            </div>
+            <p class="text-sm text-gray-600">
+                {{ m.yarn_weight_display }}{% if m.brand %} · {{ m.brand }}{% endif %}
+                {% if m.needle_mm %} · aguja {{ m.needle_mm }} mm{% endif %}
+                {% if m.hook_mm %} · ganchillo {{ m.hook_mm }} mm{% endif %}
+            </p>
+            {% if m.composition %}
+                <p class="text-xs text-gray-500">
+                    {% for c in m.composition %}{{ c.percent|floatformat:"-2" }}% {{ c.fiber_display }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                </p>
+            {% endif %}
+            {% if m.description %}<p class="mt-1 text-sm text-gray-600">{{ m.description }}</p>{% endif %}
+            <p class="mt-1 text-xs text-gray-400">{{ m.created_at|date:"d/m/Y" }}</p>
+        </li>
+    {% empty %}
+        {% if not error %}<li class="text-gray-500">Todavía no hay materiales.</li>{% endif %}
+    {% endfor %}
+</ul>
+{% endblock %}
