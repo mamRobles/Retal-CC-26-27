@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 
-{% block title %}Nuevo material{% endblock %}
+{% block title %}{{ titulo|default:'Material' }}{% endblock %}
 
 {% block content %}
 <a href="{% url 'materiales' propietario.username %}" class="text-sm text-indigo-600 hover:underline">← Mis materiales</a>
-<h1 class="text-2xl font-bold mt-4 mb-6">Nuevo material</h1>
+<h1 class="text-2xl font-bold mt-4 mb-6">{{ titulo|default:"Material" }}</h1>
 
 {% if error %}
     {# Sin la API no hay opciones para los desplegables, así que no se puede mostrar el form #}
