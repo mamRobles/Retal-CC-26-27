@@ -217,3 +217,51 @@ class DetalleConMaterialesTestCase(TestCase):
 
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'No se pudo contactar.')
+
+
+class BusquedaFiltrosTestCase(TestCase):
+    def setUp(self):
+        ana = User.objects.create_user('ana', 'ana@example.com', 'clave-segura-123')
+        crear = Proyecto.objects.create
+        crear(usuario=ana, titulo='Jersey de punto', tecnica='punto', estado='en_curso', publico=True)
+        crear(usuario=ana, titulo='Gorro de ganchillo', tecnica='ganchillo', estado='terminado', publico=True)
+        crear(usuario=ana, titulo='Amigurumi', tecnica='ganchillo', estado='en_curso', publico=True)
+        crear(usuario=ana, titulo='Ganchillo secreto', tecnica='ganchillo', estado='en_curso')  # privado
+
+    def titulos(self, **params):
+        response = self.client.get(reverse('busqueda'), params)
+        self.assertEqual(response.status_code, 200)
+        return sorted(p.titulo for p in response.context['proyectos'])
+
+    def test_filtra_por_tecnica(self):
+        self.assertEqual(self.titulos(tecnica='ganchillo'), ['Amigurumi', 'Gorro de ganchillo'])
+
+    def test_filtra_por_estado(self):
+        self.assertEqual(self.titulos(estado='en_curso'), ['Amigurumi', 'Jersey de punto'])
+
+    def test_filtros_combinados_con_texto(self):
+        self.assertEqual(self.titulos(q='gorro', tecnica='ganchillo', estado='terminado'), ['Gorro de ganchillo'])
+        self.assertEqual(self.titulos(tecnica='punto', estado='terminado'), [])
+
+    def test_los_privados_no_salen_aunque_coincidan(self):
+        self.assertNotIn('Ganchillo secreto', self.titulos(tecnica='ganchillo', estado='en_curso'))
+
+    def test_un_valor_que_no_existe_se_ignora(self):
+        self.assertEqual(len(self.titulos(tecnica='macrame', estado='???')), 3)
+
+    def test_el_desplegable_recuerda_lo_elegido(self):
+        response = self.client.get(reverse('busqueda'), {'tecnica': 'ganchillo'})
+        self.assertContains(response, '<option value="ganchillo" selected>')
+
+    def test_la_paginacion_conserva_los_filtros(self):
+        ana = User.objects.get(username='ana')
+        Proyecto.objects.bulk_create(
+            Proyecto(usuario=ana, titulo=f'Chal {n}', tecnica='ganchillo', publico=True)
+            for n in range(25)
+        )
+
+        response = self.client.get(reverse('busqueda'), {'q': 'chal', 'tecnica': 'ganchillo'})
+
+        self.assertContains(response, '?q=chal&amp;tecnica=ganchillo&amp;page=2')
+        siguiente = self.client.get(reverse('busqueda'), {'q': 'chal', 'tecnica': 'ganchillo', 'page': 2})
+        self.assertEqual(len(siguiente.context['proyectos']), 5)  # 25 = 20 + 5
