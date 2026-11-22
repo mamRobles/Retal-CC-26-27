@@ -87,4 +87,7 @@ def get_item(item_id):
 
 def delete_item(item_id):
     _request('DELETE', f'/api/items/{item_id}/')
+    
+def update_item(item_id, **campos):
+    return _request('PUT', f'/api/items/{item_id}/', json=campos)
 

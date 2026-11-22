@@ -67,40 +67,35 @@ def choices(request):
         'fiber': _opciones(Composicion.Fibra.choices),
     })
 
-
-@csrf_exempt
-@service_token_required
-@require_http_methods(['GET', 'POST'])
-def items(request):
-    if request.method == 'GET':
-        return JsonResponse({'items': [serialize(i) for i in Item.objects.prefetch_related('composicion')[:100]]})
-
+def _leer_payload(request):
     try:
         payload = json.loads(request.body or b'{}')
     except json.JSONDecodeError:
-        return JsonResponse({'error': 'JSON inválido'}, status=400)
-
-    composicion = payload.get('composition') or []
+        return None, None, JsonResponse({'error': 'JSON inválido'}, status=400)
+    
+    composicion =  payload.get('composition') or []
     if not isinstance(composicion, list):
-        return JsonResponse({'error': 'composition debe ser una lista'}, status=400)
+        return None, None, JsonResponse({'error': 'Composition debe ser una lista'}, status=400)
+    
+    return payload, composicion, None
 
-    item = Item(
-        titulo=str(payload.get('title', '')).strip(),
-        descripcion=str(payload.get('description', '')).strip(),
-        creado_por=str(payload.get('created_by', '')).strip(),
-        tam_lana=payload.get('yarn_weight') or Item.TamLana.SPORT,
-        tam_aguja_mm=payload.get('needle_mm'),
-        tam_ganchillo_mm=payload.get('hook_mm'),
-        marca=str(payload.get('brand', '')).strip(),
-    )
+def _guardar(item, payload, composicion):
+    item.titulo = str(payload.get('title', '')).strip()
+    item.descripcion = str(payload.get('description', '')).strip()
+    item.tam_lana = payload.get('yarn_weight') or Item.TamLana.SPORT
+    item.tam_aguja_mm = payload.get('needle_mm')
+    item.tam_ganchillo_mm = payload.get('hook_mm')
+    item.marca = str(payload.get('brand', '')).strip()
+
     try:
         with transaction.atomic():
             item.full_clean()
             item.save()
+            item.composicion.all().delete()  # al crear no hay nada; al editar se reemplaza
             total = Decimal(0)
             for c in composicion:
                 fibra = Composicion(item=item, fibra=c.get('fiber'), porcentaje=c.get('percent'))
-                fibra.full_clean()  
+                fibra.full_clean()
                 fibra.save()
                 total += fibra.porcentaje
             if total > 100:
@@ -108,19 +103,32 @@ def items(request):
     except (ValidationError, AttributeError) as exc:
         detalle = exc.message_dict if isinstance(exc, ValidationError) else 'formato no válido'
         return JsonResponse({'error': detalle}, status=400)
+    return None
+    
+@csrf_exempt
+@service_token_required
+@require_http_methods(['GET', 'POST'])
+def items(request):
+    if request.method == 'GET':
+        return JsonResponse({'items': [serialize(i) for i in Item.objects.prefetch_related('composicion')[:100]]})
 
-    item.refresh_from_db() 
+    payload, composicion, error = _leer_payload(request)
+    if error:
+        return error
+
+    item = Item(creado_por=str(payload.get('created_by', '')).strip())
+    error = _guardar(item, payload, composicion)
+    if error:
+        return error
+
+    item.refresh_from_db()
     return JsonResponse(serialize(item), status=201)
+
 
 @csrf_exempt
 @service_token_required
-@require_http_methods(['GET', 'DELETE'])
+@require_http_methods(['GET', 'PUT', 'DELETE'])
 def item_detail(request, item_id):
-    '''GET: un material. DELETE: lo borra (su composición se va en cascada).
-
-    Este servicio no sabe quién es el usuario final: comprobar que quien borra es
-    el dueño (created_by) es responsabilidad de Retales.
-    '''
     try:
         item = Item.objects.prefetch_related('composicion').get(pk=item_id)
     except Item.DoesNotExist:
@@ -129,5 +137,14 @@ def item_detail(request, item_id):
     if request.method == 'DELETE':
         item.delete()
         return HttpResponse(status=204)
+
+    if request.method == 'PUT':
+        payload, composicion, error = _leer_payload(request)
+        if error:
+            return error
+        error = _guardar(item, payload, composicion)
+        if error:
+            return error
+        item.refresh_from_db()
 
     return JsonResponse(serialize(item))

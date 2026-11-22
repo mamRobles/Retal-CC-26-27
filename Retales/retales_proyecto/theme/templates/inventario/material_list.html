@@ -20,7 +20,10 @@
             <div class="flex items-start justify-between gap-3">
                 <p class="font-semibold">{{ m.title }}</p>
                 {% if es_propietario %}
-                    <a href="{% url 'material_borrar' propietario.username m.id %}" class="text-sm text-red-600 hover:underline">Borrar</a>
+                    <div class="flex gap-3 text-sm">
+                        <a href="{% url 'material_editar' propietario.username m.id %}" class="text-indigo-600 hover:underline">Editar</a>
+                        <a href="{% url 'material_borrar' propietario.username m.id %}" class="text-red-600 hover:underline">Borrar</a>
+                    </div>
                 {% endif %}
             </div>
             <p class="text-sm text-gray-600">
