@@ -67,7 +67,7 @@ def list_items():
 def get_choices():
     data = _request(
         'GET',
-        '/api/choices'
+        '/api/choices/'
     )
     return {
         campo: [(o['value'], o['label']) for o in opciones]

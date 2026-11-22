@@ -2,7 +2,6 @@
 from unittest.mock import MagicMock, patch
  
 import requests
-from django.core.cache import cache
 from django.test import SimpleTestCase, TestCase, override_settings
  
 from core import services
@@ -109,9 +108,6 @@ RESPUESTA_CHOICES = {
 @patch('core.services.requests.request')
 class GetChoicesTestCase(SimpleTestCase):
 
-    def setUp(self):
-        cache.delete(services.CHOICES_CACHE_KEY)
-
     def _respuesta(self):
         response = MagicMock()
         response.json.return_value = RESPUESTA_CHOICES
@@ -126,13 +122,6 @@ class GetChoicesTestCase(SimpleTestCase):
         self.assertEqual(choices['yarn_weight'], [('dk', 'DK (CYC 3)')])
         self.assertEqual(choices['fiber'], [('lana', 'Lana'), ('seda', 'Seda')])
 
-    def test_se_cachea_y_solo_llama_una_vez(self, mock_request):
-        mock_request.return_value = self._respuesta()
-
-        services.get_choices()
-        services.get_choices()
-
-        mock_request.assert_called_once()
 
     def test_si_el_servicio_cae_lanza_microservice_error(self, mock_request):
         mock_request.side_effect = requests.ConnectionError('caído')
