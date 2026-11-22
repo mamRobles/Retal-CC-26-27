@@ -4,6 +4,7 @@ from core import services
 from django.contrib.auth import get_user_model
 from django.test import SimpleTestCase, TestCase
 from django.urls import reverse
+from proyectos.models import Proyecto
 
 from .forms import formularios_material, payload_material
 
@@ -182,3 +183,92 @@ class MaterialListViewTestCase(TestCase):
         self.assertNotContains(self.client.get(self.url), boton)
         self.client.force_login(self.ana)
         self.assertContains(self.client.get(self.url), boton)
+
+
+@patch('core.services.delete_item')
+@patch('core.services.get_item')
+class MaterialDeleteViewTestCase(TestCase):
+    def setUp(self):
+        self.ana = User.objects.create_user('ana', 'ana@example.com', 'clave-segura-123')
+        self.luis = User.objects.create_user('luis', 'luis@example.com', 'clave-segura-123')
+        self.url = reverse('material_borrar', args=['ana', 1])
+
+    def test_exige_login(self, mock_get, mock_delete):
+        response = self.client.post(self.url)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(reverse('login'), response.url)
+        mock_delete.assert_not_called()
+
+    def test_get_pide_confirmacion_sin_borrar(self, mock_get, mock_delete):
+        mock_get.return_value = ITEM_ANA
+        self.client.force_login(self.ana)
+
+        response = self.client.get(self.url)
+
+        self.assertContains(response, '¿Borrar «Drops Nepal»?')
+        mock_delete.assert_not_called()
+
+    def test_post_borra_y_redirige(self, mock_get, mock_delete):
+        mock_get.return_value = ITEM_ANA
+        self.client.force_login(self.ana)
+
+        response = self.client.post(self.url)
+
+        mock_delete.assert_called_once_with(1)
+        self.assertRedirects(response, reverse('materiales', args=['ana']), fetch_redirect_response=False)
+
+    def test_no_se_puede_borrar_un_material_ajeno_cambiando_el_id(self, mock_get, mock_delete):
+        # Ana está en SU url, pero el id 2 es de Luis.
+        mock_get.return_value = ITEM_LUIS
+        self.client.force_login(self.ana)
+
+        response = self.client.post(reverse('material_borrar', args=['ana', 2]))
+
+        self.assertEqual(response.status_code, 404)
+        mock_delete.assert_not_called()
+
+    def test_no_se_puede_usar_la_url_de_otro_usuario(self, mock_get, mock_delete):
+        self.client.force_login(self.luis)
+        self.assertEqual(self.client.post(self.url).status_code, 404)
+        mock_get.assert_not_called()
+        mock_delete.assert_not_called()
+
+    def test_material_inexistente_da_404(self, mock_get, mock_delete):
+        mock_get.side_effect = services.MaterialNoEncontrado('no existe')
+        self.client.force_login(self.ana)
+        self.assertEqual(self.client.get(self.url).status_code, 404)
+
+    def test_se_desenlaza_de_los_proyectos(self, mock_get, mock_delete):
+        mock_get.return_value = ITEM_ANA
+        con = Proyecto.objects.create(usuario=self.ana, titulo='Jersey', materiales_ids=[1, 5])
+        sin = Proyecto.objects.create(usuario=self.ana, titulo='Gorro', materiales_ids=[5])
+        self.client.force_login(self.ana)
+
+        self.client.post(self.url)
+
+        con.refresh_from_db()
+        sin.refresh_from_db()
+        self.assertEqual(con.materiales_ids, [5])
+        self.assertEqual(sin.materiales_ids, [5])
+
+    def test_si_la_api_cae_no_se_toca_nada(self, mock_get, mock_delete):
+        mock_get.return_value = ITEM_ANA
+        mock_delete.side_effect = services.MicroserviceError('No se pudo contactar.')
+        proyecto = Proyecto.objects.create(usuario=self.ana, titulo='Jersey', materiales_ids=[1])
+        self.client.force_login(self.ana)
+
+        response = self.client.post(self.url)
+
+        self.assertEqual(response.status_code, 503)
+        proyecto.refresh_from_db()
+        self.assertEqual(proyecto.materiales_ids, [1])  # no se desenlaza si no se borró
+
+
+class MaterialListBotonBorrarTestCase(TestCase):
+    @patch('core.services.list_items', return_value=[ITEM_ANA])
+    def test_el_boton_borrar_solo_lo_ve_el_dueno(self, _):
+        ana = User.objects.create_user('ana', 'ana@example.com', 'clave-segura-123')
+        url, boton = reverse('materiales', args=['ana']), reverse('material_borrar', args=['ana', 1])
+        self.assertNotContains(self.client.get(url), boton)
+        self.client.force_login(ana)
+        self.assertContains(self.client.get(url), boton)
