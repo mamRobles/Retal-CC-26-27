@@ -3,7 +3,7 @@
 {% block title %}{{ titulo|default:'Material' }}{% endblock %}
 
 {% block content %}
-<a href="{% url 'materiales' propietario.username %}" class="text-sm text-indigo-600 hover:underline">← Mis materiales</a>
+<a href="{% url 'materiales' propietario.username %}" class="text-sm text-olive-leaf hover:underline">← Mis materiales</a>
 <h1 class="text-2xl font-bold mt-4 mb-6">{{ titulo|default:"Material" }}</h1>
 
 {% if error %}
@@ -15,7 +15,7 @@
 <form method="post" class="bg-white rounded-2xl shadow-sm p-6 space-y-6">
     {% csrf_token %}
     {% if form.non_field_errors %}
-        <div class="rounded-lg bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+        <div class="rounded-lg bg-sunlit-clay/15 border border-copperwood/40 p-3 text-sm text-copperwood-oscuro">
             {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
         </div>
     {% endif %}
@@ -36,7 +36,7 @@
     <fieldset class="space-y-3">
         <legend class="text-sm font-medium text-gray-700 mb-1">Composición</legend>
         {{ formset.management_form }}
-        {% for error in formset.non_form_errors %}<p class="text-sm text-red-600">{{ error }}</p>{% endfor %}
+        {% for error in formset.non_form_errors %}<p class="text-sm text-copperwood-oscuro">{{ error }}</p>{% endfor %}
 
         <div id="composicion-filas" class="space-y-3">
             {% for f in formset %}{% include "inventario/_fila_composicion.html" with f=f %}{% endfor %}
@@ -44,12 +44,12 @@
         <template id="composicion-vacia">
             {% include "inventario/_fila_composicion.html" with f=formset.empty_form %}
         </template>
-        <button type="button" id="composicion-mas" class="text-sm text-indigo-600 hover:underline">+ Añadir fibra</button>
+        <button type="button" id="composicion-mas" class="text-sm text-olive-leaf hover:underline">+ Añadir fibra</button>
     </fieldset>
 
     <div class="flex gap-3">
-        <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 font-semibold text-white hover:bg-indigo-700">Guardar</button>
-        <a href="{% url 'materiales' propietario.username %}" class="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50">Cancelar</a>
+        <button type="submit" class="btn-estrellas">Guardar{% include "_estrellas.html" %}</button>
+        <a href="{% url 'materiales' propietario.username %}" class="rounded-lg border-2 border-copperwood px-4 py-2 text-black-forest hover:bg-sunlit-clay/25">Cancelar</a>
     </div>
 </form>
 

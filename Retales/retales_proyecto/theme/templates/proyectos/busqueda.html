@@ -20,7 +20,7 @@
             <option value="{{ valor }}"{% if valor == estado %} selected{% endif %}>{{ nombre }}</option>
         {% endfor %}
     </select>
-    <button type="submit" class="rounded-lg bg-indigo-600 px-4 py-2 text-white hover:bg-indigo-700">Buscar</button>
+    <button type="submit" class="btn-estrellas">Buscar{% include "_estrellas.html" %}</button>
     {% if q or tecnica or estado %}
         <a href="{% url 'busqueda' %}" class="self-center text-sm text-gray-500 hover:underline">Quitar filtros</a>
     {% endif %}
@@ -30,9 +30,9 @@
 
 {% if page_obj.has_other_pages %}
 <div class="mt-6 flex gap-4 text-sm">
-    {% if page_obj.has_previous %}<a href="?{% if filtros_url %}{{ filtros_url }}&amp;{% endif %}page={{ page_obj.previous_page_number }}" class="text-indigo-600">← Anterior</a>{% endif %}
+    {% if page_obj.has_previous %}<a href="?{% if filtros_url %}{{ filtros_url }}&amp;{% endif %}page={{ page_obj.previous_page_number }}" class="text-olive-leaf">← Anterior</a>{% endif %}
     <span>Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>
-    {% if page_obj.has_next %}<a href="?{% if filtros_url %}{{ filtros_url }}&amp;{% endif %}page={{ page_obj.next_page_number }}" class="text-indigo-600">Siguiente →</a>{% endif %}
+    {% if page_obj.has_next %}<a href="?{% if filtros_url %}{{ filtros_url }}&amp;{% endif %}page={{ page_obj.next_page_number }}" class="text-olive-leaf">Siguiente →</a>{% endif %}
 </div>
 {% endif %}
 {% endblock %}

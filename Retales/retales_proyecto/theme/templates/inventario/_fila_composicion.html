@@ -3,14 +3,14 @@
     {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
     <div class="[&_select]:w-full [&_select]:rounded-lg [&_select]:border [&_select]:border-gray-300 [&_select]:bg-white [&_select]:px-3 [&_select]:py-2">
         {{ f.fibra }}
-        {% for error in f.fibra.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
+        {% for error in f.fibra.errors %}<p class="mt-1 text-sm text-copperwood-oscuro">{{ error }}</p>{% endfor %}
     </div>
     <div class="relative [&_input]:w-full [&_input]:rounded-lg [&_input]:border [&_input]:border-gray-300 [&_input]:py-2 [&_input]:pl-3 [&_input]:pr-7">
         {{ f.porcentaje }}
         <span class="pointer-events-none absolute right-3 top-2 text-gray-400">%</span>
-        {% for error in f.porcentaje.errors %}<p class="mt-1 text-sm text-red-600">{{ error }}</p>{% endfor %}
+        {% for error in f.porcentaje.errors %}<p class="mt-1 text-sm text-copperwood-oscuro">{{ error }}</p>{% endfor %}
     </div>
-    <label class="flex items-center gap-1 pt-2 text-sm text-gray-500" title="Quitar esta fibra">
+    <label class="flex items-center gap-2 pt-1 text-sm text-gray-500" title="Quitar esta fibra">
         {{ f.DELETE }} Quitar
     </label>
 </div>

@@ -7,15 +7,15 @@
     <div class="rounded-lg bg-yellow-50 border border-yellow-200 p-3 text-sm text-yellow-800">
         {{ error }} Inténtalo de nuevo en unos minutos.
     </div>
-    <a href="{% url 'materiales' user.username %}" class="mt-4 inline-block text-sm text-indigo-600 hover:underline">← Mis materiales</a>
+    <a href="{% url 'materiales' user.username %}" class="mt-4 inline-block text-sm text-olive-leaf hover:underline">← Mis materiales</a>
 {% else %}
 <div class="bg-white rounded-2xl shadow-sm p-6">
     <h1 class="text-xl font-bold">¿Borrar «{{ material.title }}»?</h1>
     <p class="mt-2 text-gray-600">Se quitará también de los proyectos donde lo tengas enlazado. Esta acción no se puede deshacer.</p>
     <form method="post" class="mt-6 flex gap-3">
         {% csrf_token %}
-        <button type="submit" class="rounded-lg bg-red-600 px-4 py-2 font-semibold text-white hover:bg-red-700">Sí, borrar</button>
-        <a href="{% url 'materiales' user.username %}" class="rounded-lg border border-gray-300 px-4 py-2 hover:bg-gray-50">Cancelar</a>
+        <button type="submit" class="btn-estrellas btn-estrellas--peligro">Sí, borrar{% include "_estrellas.html" %}</button>
+        <a href="{% url 'materiales' user.username %}" class="rounded-lg border-2 border-copperwood px-4 py-2 text-black-forest hover:bg-sunlit-clay/25">Cancelar</a>
     </form>
 </div>
 {% endif %}
