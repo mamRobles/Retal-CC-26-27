@@ -1,3 +1,6 @@
+from unittest.mock import patch
+
+from core import services
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
@@ -13,6 +16,10 @@ class ProyectoViewsTestCase(TestCase):
         self.luis = User.objects.create_user('luis', 'luis@example.com', 'clave-segura-123')
         self.publico = Proyecto.objects.create(usuario=self.ana, titulo='Jersey', publico=True)
         self.privado = Proyecto.objects.create(usuario=self.ana, titulo='Bufanda secreta')
+        # Crear/editar piden los materiales al microservicio: aquí no hay ninguno.
+        patcher = patch('core.services.list_items', return_value=[])
+        patcher.start()
+        self.addCleanup(patcher.stop)
 
     def test_la_portada_carga(self):
         self.assertEqual(self.client.get(reverse('home')).status_code, 200)
@@ -100,3 +107,113 @@ class RegistroTestCase(TestCase):
         })
         self.assertEqual(response.status_code, 200)
         self.assertFalse(User.objects.filter(username='admin').exists())
+
+
+MATERIALES_ANA = [
+    {'id': 1, 'title': 'Drops Nepal', 'yarn_weight_display': 'Aran (CYC 4)', 'brand': 'Drops'},
+    {'id': 2, 'title': 'Algodón azul', 'yarn_weight_display': 'DK (CYC 3)', 'brand': ''},
+    {'id': 3, 'title': 'Merino gris', 'yarn_weight_display': 'Sport (CYC 2)', 'brand': ''},
+]
+DATOS_PROYECTO = {'titulo': 'Jersey', 'tecnica': 'punto', 'estado': 'en_curso', 'progreso': 10}
+
+
+@patch('core.services.list_items', return_value=MATERIALES_ANA)
+class EnlazarMaterialesTestCase(TestCase):
+    def setUp(self):
+        self.ana = User.objects.create_user('ana', 'ana@example.com', 'clave-segura-123')
+        self.luis = User.objects.create_user('luis', 'luis@example.com', 'clave-segura-123')
+        self.client.force_login(self.ana)
+        self.agregar = reverse('proyecto_agregar', args=['ana'])
+
+    def test_el_form_ofrece_los_materiales_del_usuario(self, mock_list):
+        response = self.client.get(self.agregar)
+
+        mock_list.assert_called_once_with(created_by='ana')
+        self.assertContains(response, 'Drops Nepal')
+        self.assertContains(response, 'type="checkbox" name="materiales_ids" value="1"')
+
+    def test_crear_con_materiales_guarda_los_ids_como_numeros(self, _):
+        self.client.post(self.agregar, {**DATOS_PROYECTO, 'materiales_ids': ['1', '3']})
+
+        proyecto = Proyecto.objects.get(titulo='Jersey')
+        self.assertEqual(proyecto.materiales_ids, [1, 3])
+
+    def test_no_se_puede_enlazar_un_material_que_no_es_tuyo(self, _):
+        # El 99 no está entre los materiales de Ana (p. ej. es de Luis).
+        response = self.client.post(self.agregar, {**DATOS_PROYECTO, 'materiales_ids': ['99']})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn('materiales_ids', response.context['form'].errors)
+        self.assertFalse(Proyecto.objects.filter(titulo='Jersey').exists())
+
+    def test_editar_precarga_y_cambia_los_enlaces(self, _):
+        proyecto = Proyecto.objects.create(usuario=self.ana, titulo='Gorro', materiales_ids=[1])
+        url = reverse('proyecto_editar', args=['ana', proyecto.pk])
+
+        self.assertEqual(self.client.get(url).context['form'].initial['materiales_ids'], [1])
+
+        self.client.post(url, {**DATOS_PROYECTO, 'titulo': 'Gorro', 'materiales_ids': ['2']})
+        proyecto.refresh_from_db()
+        self.assertEqual(proyecto.materiales_ids, [2])
+
+    def test_desmarcar_todo_deja_la_lista_vacia(self, _):
+        proyecto = Proyecto.objects.create(usuario=self.ana, titulo='Gorro', materiales_ids=[1, 2])
+
+        self.client.post(reverse('proyecto_editar', args=['ana', proyecto.pk]), {**DATOS_PROYECTO, 'titulo': 'Gorro'})
+
+        proyecto.refresh_from_db()
+        self.assertEqual(proyecto.materiales_ids, [])
+
+    def test_si_la_api_cae_se_puede_guardar_y_se_conservan_los_enlaces(self, mock_list):
+        mock_list.side_effect = services.MicroserviceError('caído')
+        proyecto = Proyecto.objects.create(usuario=self.ana, titulo='Gorro', materiales_ids=[1, 2])
+        url = reverse('proyecto_editar', args=['ana', proyecto.pk])
+
+        response = self.client.get(url)
+        self.assertContains(response, 'no se pueden cargar tus materiales')
+        self.assertNotIn('materiales_ids', response.context['form'].fields)
+
+        self.client.post(url, {**DATOS_PROYECTO, 'titulo': 'Gorro con pompón'})
+        proyecto.refresh_from_db()
+        self.assertEqual(proyecto.titulo, 'Gorro con pompón')
+        self.assertEqual(proyecto.materiales_ids, [1, 2])  # no se han perdido
+
+
+@patch('core.services.list_items', return_value=MATERIALES_ANA)
+class DetalleConMaterialesTestCase(TestCase):
+    def setUp(self):
+        self.ana = User.objects.create_user('ana', 'ana@example.com', 'clave-segura-123')
+
+    def detalle(self, proyecto):
+        return self.client.get(reverse('proyecto_detalle', args=['ana', proyecto.pk]))
+
+    def test_muestra_solo_los_materiales_enlazados(self, mock_list):
+        proyecto = Proyecto.objects.create(
+            usuario=self.ana, titulo='Jersey', publico=True, materiales_ids=[1, 3]
+        )
+
+        response = self.detalle(proyecto)  # visitante anónimo: el proyecto es público
+
+        mock_list.assert_called_once_with(created_by='ana')
+        self.assertContains(response, 'Drops Nepal')
+        self.assertContains(response, 'Merino gris')
+        self.assertNotContains(response, 'Algodón azul')
+
+    def test_sin_materiales_no_llama_a_la_api(self, mock_list):
+        proyecto = Proyecto.objects.create(usuario=self.ana, titulo='Jersey', publico=True)
+
+        response = self.detalle(proyecto)
+
+        self.assertEqual(response.status_code, 200)
+        mock_list.assert_not_called()
+
+    def test_si_la_api_cae_el_detalle_carga_y_avisa(self, mock_list):
+        mock_list.side_effect = services.MicroserviceError('No se pudo contactar.')
+        proyecto = Proyecto.objects.create(
+            usuario=self.ana, titulo='Jersey', publico=True, materiales_ids=[1]
+        )
+
+        response = self.detalle(proyecto)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'No se pudo contactar.')
