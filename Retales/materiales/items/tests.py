@@ -267,3 +267,33 @@ class ItemUpdateTestCase(TestCase):
 
     def test_inexistente_devuelve_404(self):
         self.assertEqual(self.put(url='/api/items/9999/', title='X').status_code, 404)
+@override_settings(SERVICE_TOKEN=TOKEN)
+class ItemsFiltroTestCase(TestCase):
+    def setUp(self):
+        Item.objects.create(titulo='Lana de Ana', creado_por='ana')
+        Item.objects.create(titulo='Otra de Ana', creado_por='ana')
+        Item.objects.create(titulo='Lana de Luis', creado_por='luis')
+        self.auth = {'X-Service-Token': TOKEN}
+
+    def titulos(self, url):
+        response = self.client.get(url, headers=self.auth)
+        self.assertEqual(response.status_code, 200)
+        return sorted(i['title'] for i in response.json()['items'])
+
+    def test_sin_filtro_devuelve_todos(self):
+        self.assertEqual(self.titulos('/api/items/'), ['Lana de Ana', 'Lana de Luis', 'Otra de Ana'])
+
+    def test_filtra_por_created_by(self):
+        self.assertEqual(self.titulos('/api/items/?created_by=ana'), ['Lana de Ana', 'Otra de Ana'])
+
+    def test_usuario_sin_materiales_devuelve_lista_vacia(self):
+        self.assertEqual(self.titulos('/api/items/?created_by=nadie'), [])
+
+    def test_filtro_vacio_equivale_a_sin_filtro(self):
+        self.assertEqual(len(self.titulos('/api/items/?created_by=')), 3)
+
+    def test_el_limite_de_100_se_aplica_despues_de_filtrar(self):
+        # Antes se cortaba en 100 sobre TODOS y luego se filtraba: con muchos materiales
+        # ajenos, a un usuario le desaparecían los suyos.
+        Item.objects.bulk_create(Item(titulo=f'Relleno {n}', creado_por='luis') for n in range(150))
+        self.assertEqual(len(self.titulos('/api/items/?created_by=ana')), 2)
