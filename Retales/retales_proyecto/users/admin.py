@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
 
@@ -15,13 +17,13 @@ class CustomUserAdmin(UserAdmin):
         ),
     )
     model = User
-    list_display = [
+    list_display: ClassVar[list[str]]  = [
         "email",
         "username",
         "is_staff",
         "is_active",
     ]
-    search_fields = ['username','email']
+    search_fields: ClassVar[list[str]]  = ['username','email']
 
 
 admin.site.register(User, CustomUserAdmin)
