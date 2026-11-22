@@ -167,7 +167,7 @@ class MaterialCreateViewTestCase(TestCase):
         self.assertNotIn('form', response.context)
 
 
-@patch('core.services.list_items', return_value=[ITEM_ANA, ITEM_LUIS])
+@patch('core.services.list_items', return_value=[ITEM_ANA])
 class MaterialListViewTestCase(TestCase):
     def setUp(self):
         self.ana = User.objects.create_user('ana', 'ana@example.com', 'clave-segura-123')
@@ -180,7 +180,7 @@ class MaterialListViewTestCase(TestCase):
 
         mock_list.assert_called_once_with(created_by='ana')
         self.assertContains(response, 'Drops Nepal')
-        
+
     def test_el_boton_de_nuevo_solo_lo_ve_el_dueno(self, _):
         boton = reverse('material_agregar', args=['ana'])
         self.assertNotContains(self.client.get(self.url), boton)
