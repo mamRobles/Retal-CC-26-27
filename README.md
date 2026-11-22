@@ -4,9 +4,15 @@
 Proyecto de desarrollo Cloud para la asignatura Cloud Computing de una aplicación de gestión personal de materiales y patrones para la realización de proyectos de arte textil.
 ## Herramientas utilizadas
 - `Python `
+- `Docker`
+- `Docker Compose`
 - `Django`
+- `Gunicorn`
+- `WhiteNoise`
+- `ruff`
+- `hadolint`
 - `Tailwind css`
-- `Postgre SQL`
+- `PostgreSQL`
 - `git y Github`
 - `VScodium`
 ## Estrategia de ramas
@@ -53,19 +59,54 @@ Para sostenerse, la plataforma contará con monetización mediante anuncios. Est
 ## Diagrama de Arquitectura
 <img width="1138" height="779" alt="diagramaCC" src="https://github.com/user-attachments/assets/53bac855-c562-4eb0-a2d7-8743e4af7518" />
 
-## Especificación de API REST
-Se usa DRF (Django rest framework) ya que la aplicación es nativamente django tanto en frontend como backend. Se usa la documentación de OpenAPI https://learn.openapis.org/specification/paths para comprender lo necesario para la especificación.
-| Verbo HTTP | Ruta | Propósito |
-| ------------- |:-------------:| -----:|
-| get | /{user} | Muestra el perfil del usuario|
-| get | /{user}/projects | Muestra los proyectos del usuario |
-| get | /{user}/materials | Muestra los materiales del usuario |
-| get | /{user}/projects/add | Muestra un menú de añadir proyecto |
-| put | /{user}/projects/add | crea el proyecto con la información proporcionada y le asigna un id |
-| put | /{user}/projects/{id}/delete | borra el proyecto seleccionado |
-| get | /{user}/projects/{id} | muestra el proyecto de id {id} |
-| get | /{user}/projects/{id}/edit | muestra un formulario de edición del proyecto {id} |
-| put | /{user}/projects/{id}/edit | manda las ediciones del proyecto a la base de datos |
-| get | /search | búsqueda global de proyectos |
-| put | /search | muestra el resultado de la búsqueda |
-| get | /admin | panel de administracion autenticado de la aplicación |
+## Especificación de la API
+Modificado en HITO 2:
+El sistema expone dos interfaces distintas:
+
+1. **Rutas web de Retales**: páginas HTML renderizadas en el servidor (Django + plantillas).
+   Al ser formularios HTML, solo usan `GET` (mostrar) y `POST` (enviar).
+2. **API REST interna del microservicio `materiales`**: JSON sobre HTTP, solo accesible desde
+   Retales dentro de la red `services_net`. No usa DRF: son vistas Django que devuelven `JsonResponse`.
+
+### Rutas web de Retales
+
+| Verbo | Ruta | Propósito | Acceso |
+|---|---|---|---|
+| GET | `/` | Portada | Público |
+| GET | `/health/` | Healthcheck (lo usa Docker) | Público |
+| GET, POST | `/registro/` | Crear cuenta | Público |
+| GET, POST | `/cuenta/login/` | Iniciar sesión | Público |
+| POST | `/cuenta/logout/` | Cerrar sesión | Logueado |
+| GET | `/buscar/?q=&tecnica=&estado=&page=` | Búsqueda global de proyectos públicos con filtros | Público |
+| GET | `/{usuario}/` | Perfil | Público |
+| GET | `/{usuario}/proyectos/` | Proyectos del usuario (el dueño ve también los privados) | Público |
+| GET, POST | `/{usuario}/proyectos/agregar/` | Crear proyecto | Dueño |
+| GET | `/{usuario}/proyectos/{id}/` | Detalle del proyecto y sus materiales | Público si es público |
+| GET, POST | `/{usuario}/proyectos/{id}/edit/` | Editar proyecto y enlazar materiales | Dueño |
+| GET, POST | `/{usuario}/proyectos/{id}/delete/` | Confirmar y borrar proyecto | Dueño |
+| GET | `/{usuario}/materiales/` | Materiales del usuario | Público |
+| GET, POST | `/{usuario}/materiales/agregar/` | Crear material | Dueño |
+| GET, POST | `/{usuario}/materiales/{id}/editar/` | Editar material | Dueño |
+| GET, POST | `/{usuario}/materiales/{id}/borrar/` | Confirmar y borrar material | Dueño |
+| GET | `/admin/` | Panel de administración (usuarios y proyectos) | Staff |
+
+Si un usuario intenta modificar algo que no es suyo, recibe `404` (no se revela que existe).
+
+### API REST del microservicio `materiales`
+
+Autenticación entre servicios: cabecera `X-Service-Token` (comparada en tiempo constante).
+Sin token válido → `401`. Método no permitido → `405`.
+El contrato JSON usa claves en inglés (`title`, `yarn_weight`, `composition`…).
+
+| Verbo | Ruta | Propósito | Respuestas |
+|---|---|---|---|
+| GET | `/health/` | Healthcheck (sin token) | `200` |
+| GET | `/api/items/?created_by={usuario}` | Lista materiales (máx. 100), opcionalmente de un usuario | `200` |
+| POST | `/api/items/` | Crea un material con su composición | `201`, `400` |
+| GET | `/api/items/{id}/` | Un material | `200`, `404` |
+| PUT | `/api/items/{id}/` | Reemplaza un material y su composición (`created_by` no se puede cambiar) | `200`, `400`, `404` |
+| DELETE | `/api/items/{id}/` | Borra un material (la composición se borra en cascada) | `204`, `404` |
+| GET | `/api/choices/` | Valores válidos de grosor de lana y fibras | `200` |
+
+Los errores `400` devuelven `{"error": {campo: [mensajes]}}`, que Retales muestra en el campo
+correspondiente del formulario.

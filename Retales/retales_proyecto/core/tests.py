@@ -44,7 +44,20 @@ class CoreServicesTestCase(SimpleTestCase):
         self.assertEqual(items[0]['title'], 'Lana')
         self.assertEqual(items[0]['created_at'].year, 2026)
         self.assertEqual(items[0]['created_at'].hour, 10)
- 
+    def test_list_items_sin_filtro_no_manda_parametros(self, mock_request):
+        mock_request.return_value = self._respuesta({'items': []})
+
+        services.list_items()
+
+        self.assertIsNone(mock_request.call_args.kwargs['params'])
+
+    def test_list_items_filtra_por_usuario(self, mock_request):
+        mock_request.return_value = self._respuesta({'items': []})
+
+        services.list_items(created_by='ana')
+
+        self.assertEqual(mock_request.call_args.kwargs['params'], {'created_by': 'ana'})
+
     def test_create_item_envia_json_por_post(self, mock_request):
         mock_request.return_value = self._respuesta({'id': 7, 'title': 'Lana'})
  

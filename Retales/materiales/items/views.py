@@ -110,8 +110,12 @@ def _guardar(item, payload, composicion):
 @require_http_methods(['GET', 'POST'])
 def items(request):
     if request.method == 'GET':
-        return JsonResponse({'items': [serialize(i) for i in Item.objects.prefetch_related('composicion')[:100]]})
-
+        queryset = Item.objects.prefetch_related('composicion')
+        created_by = request.GET.get('created_by')
+        if created_by:  # ?created_by=ana -> solo los materiales de ana
+            queryset = queryset.filter(creado_por=created_by)
+        return JsonResponse({'items': [serialize(i) for i in queryset[:100]]})
+        
     payload, composicion, error = _leer_payload(request)
     if error:
         return error

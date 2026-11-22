@@ -33,9 +33,7 @@ class MaterialListView(TemplateView):
         ctx['propietario'] = propietario
         ctx['es_propietario'] = self.request.user == propietario
         try:
-            ctx['materiales'] = [
-                i for i in services.list_items() if i['created_by'] == propietario.username
-            ]
+             ctx['materiales'] = services.list_items(created_by=propietario.username)
         except services.MicroserviceError as exc:
             # Si materiales está caído, la página sigue funcionando y avisa.
             ctx['materiales'] = []

@@ -1,3 +1,4 @@
+from core import services
 from django.contrib.auth import get_user_model
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import Q
@@ -56,6 +57,19 @@ class SoloPropietarioMixin(LoginRequiredMixin, PropietarioMixin):
         return reverse('proyecto_list', kwargs={'username': self.propietario.username})
 
 
+class MaterialesEnFormMixin:
+    """Pasa al ProyectoForm los materiales del usuario para las casillas de enlazar."""
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        try:
+            materiales = services.list_items(created_by=self.request.user.username)
+            kwargs['materiales'] = [(m['id'], m['title']) for m in materiales]
+        except services.MicroserviceError:
+            kwargs['materiales'] = None  # el form se muestra sin el campo, y avisa
+        return kwargs
+
+
 class ProyectoListView(PropietarioMixin, ListView):
     template_name = 'proyectos/proyecto_list.html'
     context_object_name = 'proyectos'
@@ -65,8 +79,20 @@ class ProyectoDetailView(PropietarioMixin, DetailView):
     template_name = 'proyectos/proyecto_detail.html'
     context_object_name = 'proyecto'
 
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ids = self.object.materiales_ids
+        ctx['materiales'] = []
+        if ids:  # si no hay ninguno enlazado, ni se llama al microservicio
+            try:
+                del_usuario = services.list_items(created_by=self.propietario.username)
+                ctx['materiales'] = [m for m in del_usuario if m['id'] in ids]
+            except services.MicroserviceError as exc:
+                ctx['materiales_error'] = str(exc)
+        return ctx
 
-class ProyectoCreateView(SoloPropietarioMixin, CreateView):
+
+class ProyectoCreateView(SoloPropietarioMixin, MaterialesEnFormMixin, CreateView):
     form_class = ProyectoForm
     template_name = 'proyectos/proyecto_form.html'
 
@@ -75,7 +101,7 @@ class ProyectoCreateView(SoloPropietarioMixin, CreateView):
         return super().form_valid(form)
 
 
-class ProyectoUpdateView(SoloPropietarioMixin, UpdateView):
+class ProyectoUpdateView(SoloPropietarioMixin, MaterialesEnFormMixin, UpdateView):
     form_class = ProyectoForm
     template_name = 'proyectos/proyecto_form.html'
     context_object_name = 'proyecto'
@@ -87,7 +113,13 @@ class ProyectoDeleteView(SoloPropietarioMixin, DeleteView):
 
 
 class BusquedaView(ListView):
-    """Buscador global (HU3): solo proyectos públicos, por título, descripción o técnica."""
+    """Buscador global (HU3): solo proyectos públicos.
+
+    Filtros (todos opcionales y combinables), por GET:
+    - q: texto en título, descripción o técnica.
+    - tecnica / estado: uno de los valores de Proyecto.Tecnica / Proyecto.Estado.
+      Un valor que no existe se ignora en vez de dar error.
+    """
 
     template_name = 'proyectos/busqueda.html'
     context_object_name = 'proyectos'
@@ -100,9 +132,23 @@ class BusquedaView(ListView):
             qs = qs.filter(
                 Q(titulo__icontains=q) | Q(descripcion__icontains=q) | Q(tecnica__icontains=q)
             )
+        tecnica = self.request.GET.get('tecnica', '')
+        if tecnica in Proyecto.Tecnica.values:
+            qs = qs.filter(tecnica=tecnica)
+        estado = self.request.GET.get('estado', '')
+        if estado in Proyecto.Estado.values:
+            qs = qs.filter(estado=estado)
         return qs
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx['q'] = self.request.GET.get('q', '')
+        ctx['tecnica'] = self.request.GET.get('tecnica', '')
+        ctx['estado'] = self.request.GET.get('estado', '')
+        ctx['tecnicas'] = Proyecto.Tecnica.choices
+        ctx['estados'] = Proyecto.Estado.choices
+        # Filtros actuales sin 'page', para que la paginación no los pierda.
+        filtros = self.request.GET.copy()
+        filtros.pop('page', None)
+        ctx['filtros_url'] = filtros.urlencode()
         return ctx

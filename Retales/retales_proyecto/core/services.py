@@ -57,11 +57,12 @@ def _request(method, path, **kwargs):
         raise MicroserviceError(f'No se pudo contactar con el servicio de materiales ({exc.__class__.__name__}).') from exc
 
 
-def list_items():
-    data = _request('GET', '/api/items/')
+def list_items(created_by=None):
+    params = {'created_by': created_by} if created_by else None
+    data = _request('GET', '/api/items/', params=params)
     items = data.get('items', [])
     for item in items:
-        item['created_at'] = parse_datetime(item['created_at'])  # para usar |date en la plantilla
+        item['created_at'] = parse_datetime(item['created_at'])
     return items
 
 def get_choices():
@@ -87,7 +88,7 @@ def get_item(item_id):
 
 def delete_item(item_id):
     _request('DELETE', f'/api/items/{item_id}/')
-    
+
 def update_item(item_id, **campos):
     return _request('PUT', f'/api/items/{item_id}/', json=campos)
 
