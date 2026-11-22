@@ -19,6 +19,9 @@ class MicroserviceError(Exception):
         super().__init__(mensaje)
         self.errores = errores or {}
 
+class MaterialNoEncontrado(MicroserviceError):
+    '''La API respondió 404: ese material no existe.'''
+
 
 def _errores_400(response):
     '''Extrae {'error': ...} de una respuesta 400 de la API como {campo: [mensajes]}.'''
@@ -39,8 +42,12 @@ def _request(method, path, **kwargs):
             method, url, headers=headers, timeout=settings.MICROSERVICE_TIMEOUT, **kwargs
         )
         response.raise_for_status()
+        if response.status_code == 204: # sin cuerpo es DELETE
+            return None
         return response.json()
     except requests.HTTPError as exc:
+        if exc.response is not None and exc.response.status_code == 404:
+            raise MaterialNoEncontrado('Ese material no existe.') from exc
         if exc.response is not None and exc.response.status_code == 400:
             raise MicroserviceError(
                 'El servicio de materiales rechazó los datos.', _errores_400(exc.response)
@@ -72,3 +79,12 @@ def create_item(title, description, created_by,**extra):
         '/api/items/',
         json={'title': title, 'description': description, 'created_by': created_by, **extra},   
     )
+def get_item(item_id):
+    item = _request('GET', f'/api/items/{item_id}/')
+    item['created_at'] = parse_datetime(item['created_at'])
+    return item
+
+
+def delete_item(item_id):
+    _request('DELETE', f'/api/items/{item_id}/')
+
